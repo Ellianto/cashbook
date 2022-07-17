@@ -1,0 +1,25 @@
+.bottom-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  padding: 4px 0;
+  background: var(--theme-color, white)
+}
+
+.bottom-tab-button {
+  border-radius: 50%;
+  min-height: 44px;
+  min-width: 44px;
+  width: 100%;
+}
+
+.active .bottom-tab-button {
+  background: var(--active-color, green) !important;
+  color: white !important;
+  border-radius: 50%;
+  min-height: 44px;
+  min-width: 44px;
+  width: 100%;
+}
