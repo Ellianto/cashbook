@@ -2,6 +2,7 @@ import React from "react";
 
 import { Layout, Row, Col, Typography } from "antd";
 
+import { NavigationBar } from "../NavigationBar";
 import './ScreenTemplate.css'
 
 interface ScreenTemplateProps {
@@ -12,7 +13,7 @@ interface ScreenTemplateProps {
 }
 
 const { Title } = Typography;
-const { Header, Content } = Layout;
+const { Header, Content, Footer } = Layout;
 
 export const ScreenTemplate: React.FC<ScreenTemplateProps> = (props) => {
   const { children, title, leftButton, rightButton } = props;
@@ -28,7 +29,10 @@ export const ScreenTemplate: React.FC<ScreenTemplateProps> = (props) => {
           <Col className="text-center" flex="0 0 56px">{rightButton}</Col>
         </Row>
       </Header>
-      <Content>{children}</Content>
+      <Content className="content-container">{children}</Content>
+      <Footer className="bottom-nav-bar">
+        <NavigationBar />
+      </Footer>
     </Layout>
   );
 };

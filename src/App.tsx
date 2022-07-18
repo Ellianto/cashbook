@@ -4,8 +4,6 @@ import { Routes, Route, Outlet } from "react-router-dom";
 
 import { Layout } from "antd";
 
-import { NavigationBar } from "./components";
-
 import { HomeScreen, TransactionFormScreen, DashboardScreen, InventoryScreen } from './screens'
 
 import { routes } from "./constants";
@@ -14,7 +12,6 @@ import "./App.css";
 
 const AppShell: React.FC = () => (
   <Layout className="app-shell">
-    <NavigationBar />
     <Outlet />
   </Layout>
 );

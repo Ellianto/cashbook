@@ -1,7 +1,11 @@
 @import '~antd/dist/antd.css';
 
 :root {
-  --theme-color: white
+  --theme-color: white;
+  /* bar-height refers to the height of header and footer of app */
+  --bar-height: 54px;
+  --header-height: var(--bar-height);
+  --bottom-nav-height: var(--bar-height);
 }
 
 body {
