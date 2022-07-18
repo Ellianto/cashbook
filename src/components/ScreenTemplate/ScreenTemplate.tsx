@@ -21,11 +21,11 @@ export const ScreenTemplate: React.FC<ScreenTemplateProps> = (props) => {
     <Layout>
       <Header className="app-bar">
         <Row align="middle" justify="space-between" wrap={false} className="app-bar-content">
-          <Col flex="0 0 56px">{leftButton}</Col>
+          <Col className="text-center" flex="0 0 56px">{leftButton}</Col>
           <Col flex="1 0 auto">
             <Title className="app-bar-title" level={1}>{title ?? "Screen Title"}</Title>
           </Col>
-          <Col flex="0 0 56px">{rightButton}</Col>
+          <Col className="text-center" flex="0 0 56px">{rightButton}</Col>
         </Row>
       </Header>
       <Content>{children}</Content>

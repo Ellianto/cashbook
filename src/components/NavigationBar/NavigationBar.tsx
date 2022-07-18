@@ -2,13 +2,12 @@ import React from "react";
 
 import { useNavigate, NavLink } from "react-router-dom";
 
-import { Layout, Button, Menu, Grid, Row, Col } from "antd";
+import { Button, Grid, Row, Col } from "antd";
 
 import { navbarItems } from "../../constants";
 
-import "./NavigationBar.css"
+import "./NavigationBar.css";
 
-const { Sider } = Layout;
 const { useBreakpoint } = Grid;
 
 // A little custom navbar, since we want the experience of
@@ -19,17 +18,19 @@ export const NavigationBar = () => {
 
   return (
     <>
-      <Sider collapsedWidth={0} breakpoint="md" trigger={null}>
-        {/* We don't really care much about desktop for now */}
-        {/* <div className="logo" /> */}
-        {/* @ts-ignore */}
-        <Menu
-          onSelect={(info) => navigate(info.key)}
-          theme="dark"
-          mode="inline"
-          items={navbarItems}
-        />
-      </Sider>
+      {/* 
+        We don't really care much about desktop for now
+        Hiding due to UI flickering on mobile view
+        <Sider collapsedWidth={0} breakpoint="md" trigger={null}>
+          <div className="logo" />
+          <Menu
+            onSelect={(info) => navigate(info.key)}
+            theme="dark"
+            mode="inline"
+            items={navbarItems}
+          />
+        </Sider>
+       */}
       {!md && (
         <div className="bottom-tab-bar">
           <Row align="middle" justify="space-around">
