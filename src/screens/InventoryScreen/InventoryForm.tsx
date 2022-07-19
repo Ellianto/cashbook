@@ -5,6 +5,8 @@ import { Form, Button, Input, Drawer, Spin, message } from "antd";
 import { formRules } from "../../constants";
 import { ProductInventory } from "../../constants/interfaces";
 
+import { addProductMethod } from "../../firebase";
+
 interface BottomSheetInventoryFormProps {
   visible: boolean;
   productToEdit: ProductInventory | null;
@@ -17,7 +19,6 @@ interface ProductFormValues {
 
 const { required } = formRules;
 
-// TODO: Implement API logic
 export const BottomSheetInventoryForm: React.FC<
   BottomSheetInventoryFormProps
 > = (props) => {
@@ -42,13 +43,20 @@ export const BottomSheetInventoryForm: React.FC<
       setIsLoading(true);
       console.log(values);
 
-      setTimeout(() => {
-        setIsLoading(false);
+      try {
+        const response = await addProductMethod(values);
+        console.log("Callable Functions Response : ", response);
         message.success(
           `Barang berhasil di${productToEdit ? "ubah" : "tambahkan"}!`
         );
+
         handleBottomSheetClosed();
-      }, 1000);
+      } catch (error) {
+        console.error(error);
+        message.error("Error! Silahkan coba lagi dalam beberapa saat!");
+      }
+
+      setIsLoading(false);
     },
     [productToEdit, handleBottomSheetClosed]
   );

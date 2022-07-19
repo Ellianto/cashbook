@@ -4,6 +4,9 @@
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
+    "@firebase/app": "^0.7.28",
+    "@firebase/auth": "^0.20.5",
+    "@firebase/functions": "^0.8.4",
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^13.5.0",
