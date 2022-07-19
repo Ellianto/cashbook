@@ -149,6 +149,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 yarn.lock
+package-lock.json
+/functions/package-lock.json
+/functions/yarn-lock.json
 
 secrets
 secrets/*
