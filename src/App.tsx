@@ -4,7 +4,7 @@ import { Routes, Route, Outlet } from "react-router-dom";
 
 import { Layout } from "antd";
 
-import { HomeScreen, TransactionFormScreen, DashboardScreen, InventoryScreen } from './screens'
+import { HomeScreen, TransactionFormScreen, DashboardScreen, CategoryScreen } from './screens'
 
 import { routes } from "./constants";
 
@@ -28,7 +28,7 @@ const App: React.FC = () => {
           element={<TransactionFormScreen />}
         />
         <Route path={routes.DASHBOARD} element={<DashboardScreen />} />
-        <Route path={routes.INVENTORY} element={<InventoryScreen />} />
+        <Route path={routes.CATEGORY} element={<CategoryScreen />} />
       </Route>
       {/* TODO: Add auth screen later */}
       {/* <Route exact path="/login" element={<AuthScreen />} /> */}

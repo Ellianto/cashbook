@@ -17,10 +17,10 @@ interface CustomMenuItem {
 }
 
 export const routes = {
-  HOME: "home",
-  TRANSACTIONS: "transactions",
-  DASHBOARD: "dashboard",
-  INVENTORY: "inventory",
+  HOME: "/home",
+  TRANSACTIONS: "/transactions",
+  DASHBOARD: "/dashboard",
+  CATEGORY: "/category",
 };
 
 export const navbarItems: CustomMenuItem[] = [
@@ -40,8 +40,8 @@ export const navbarItems: CustomMenuItem[] = [
     icon: <ReconciliationFilled />, // Icon to show
   },
   {
-    label: "Inventory", // What text will be shown (only on desktop)
-    key: routes.INVENTORY, // pathname to be used in Link component
+    label: "Kategori", // What text will be shown (only on desktop)
+    key: routes.CATEGORY, // pathname to be used in Link component
     icon: <ShopFilled />, // Icon to show
   },
 ];

@@ -1,4 +1,4 @@
 export * from './DashboardScreen'
 export * from './HomeScreen'
-export * from './InventoryScreen'
+export * from './CategoryScreen'
 export * from './TransactionsFormScreen'
