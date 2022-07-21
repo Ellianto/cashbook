@@ -115,7 +115,7 @@ exports.editProduct = generateLightRuntimeCloudFunctions().onCall(
 
     try {
       const { id: documentId, ...payload } = data;
-      const docReference = productsCollectionReference.doc(id);
+      const docReference = productsCollectionReference.doc(documentId);
 
       await docReference.set(payload, { merge: true });
 
@@ -219,7 +219,7 @@ exports.editOperationals = generateLightRuntimeCloudFunctions().onCall(
 
     try {
       const { id: documentId, ...payload } = data;
-      const docReference = operationalsCollectionReference.doc(id);
+      const docReference = operationalsCollectionReference.doc(documentId);
 
       await docReference.set(payload, { merge: true });
 
