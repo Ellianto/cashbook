@@ -203,13 +203,14 @@ export const CategoryScreen = () => {
                 <List.Item>
                   <Card
                     title={item.name}
-                    actions={[
+                    bodyStyle={{ padding: 0 }}
+                    extra={
                       <EditCategoryButton
                         item={item}
                         onClick={handleEditCategoryClicked}
                         key={`edit-operational-${item.id}`}
-                      />,
-                    ]}
+                      />
+                    }
                   />
                 </List.Item>
               )}

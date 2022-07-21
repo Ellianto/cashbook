@@ -63,7 +63,7 @@ export const TransactionFormScreen = () => {
   const [operationals, setOperationals] = useState<OperationalCategory[]>([]);
 
   const fetchOperationals = useCallback(async () => {
-    if (operationals.length === 0) return;
+    if (operationals.length > 0) return;
 
     setIsFetchingOptions(true);
     try {
@@ -76,10 +76,10 @@ export const TransactionFormScreen = () => {
       handleFirebaseError(error);
     }
     setIsFetchingOptions(false);
-  }, [operationals]);
+  }, []);
 
   const fetchProducts = useCallback(async () => {
-    if (products.length === 0) return;
+    if (products.length > 0) return;
 
     setIsFetchingOptions(true);
     try {
@@ -92,7 +92,7 @@ export const TransactionFormScreen = () => {
       handleFirebaseError(error);
     }
     setIsFetchingOptions(false);
-  }, [products]);
+  }, []);
 
   useEffect(() => {
     if (expenseType === CATEGORY_TYPES.OPERATIONAL) {
@@ -101,6 +101,13 @@ export const TransactionFormScreen = () => {
       fetchProducts();
     }
   }, [expenseType, fetchOperationals, fetchProducts]);
+
+  useEffect(() => {
+    formInstance.setFieldsValue({
+      ...formInstance.getFieldsValue(),
+      transactionCategoryID: undefined,
+    })
+  }, [expenseType, formInstance])
 
   const handleTransactionDateChange = useCallback(
     (momentDate: moment.Moment | null, _: string) => {
@@ -223,6 +230,7 @@ export const TransactionFormScreen = () => {
               className="block-input"
               value={expenseType}
               onChange={handleExpenseTypeChanged}
+              buttonStyle="solid"
             >
               <Radio.Button
                 className="block-radio-btn"
