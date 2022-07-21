@@ -1,4 +1,9 @@
 export const CATEGORY_TYPES = {
   OPERATIONAL: "OPERATIONAL",
   PRODUCT: "PRODUCT",
-}
+};
+
+export const TRANSACTION_TYPES = {
+  CREDIT: "CREDIT",
+  DEBIT: "DEBIT",
+};

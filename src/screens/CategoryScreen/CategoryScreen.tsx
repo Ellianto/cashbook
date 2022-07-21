@@ -18,6 +18,7 @@ import { constants } from "../../constants";
 
 import { getOperationalsMethod, getProductsMethod } from "../../firebase";
 import { handleFirebaseError } from "../../utils";
+import { CategoryTypeValues } from "../../constants/interfaces/CategoryTypes";
 
 type Category = ProductInventory | OperationalCategory;
 
@@ -55,7 +56,7 @@ const EditCategoryButton: React.FC<EditCategoryButtonProps> = (props) => {
 // TODO: Implement pagination if needed
 export const CategoryScreen = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [categoryView, setCategoryView] = useState<string>(
+  const [categoryView, setCategoryView] = useState<CategoryTypeValues>(
     CATEGORY_TYPES.PRODUCT
   );
   const [operationals, setOperationals] = useState<OperationalCategory[]>([]);
