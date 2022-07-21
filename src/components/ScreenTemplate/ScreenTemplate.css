@@ -7,7 +7,12 @@
   justify-content: center;
   width: 100% !important;
 
-  height: 54px !important;
+  height: var(--header-height, 54px) !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
 }
 
 .app-bar-title {
@@ -19,4 +24,23 @@
 .app-bar-content {
   height: 100%;
   width: 100%;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.content-container {
+  margin: 54px 0 !important;
+  overflow-y: scroll;
+}
+
+.bottom-nav-bar {
+  padding: 0 4px !important;
+  height: var(--bottom-nav-height, 54px) !important;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
 }

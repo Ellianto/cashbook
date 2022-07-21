@@ -1,0 +1,4 @@
+export const CATEGORY_TYPES = {
+  OPERATIONAL: "OPERATIONAL",
+  PRODUCT: "PRODUCT",
+}
