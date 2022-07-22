@@ -15,23 +15,24 @@ import {
   message,
 } from "antd";
 import moment from "moment";
+import numeral from "numeral";
 
 import { BackButton, ScreenTemplate } from "../../components";
-import { CATEGORY_TYPES, TRANSACTION_TYPES } from "../../constants/constants";
 import {
   OperationalCategory,
   ProductInventory,
   TransactionTypeValues,
   CategoryTypeValues,
 } from "../../constants/interfaces";
-import { formRules } from "../../constants";
-
-import { getOperationalsMethod, getProductsMethod } from "../../firebase";
-import { handleFirebaseError } from "../../utils";
 import {
   GetOperationalsResponse,
   GetProductsResponse,
 } from "../../constants/responses";
+import { TransactionPayload } from "../../constants/payloads";
+import { formRules, constants } from "../../constants";
+
+import { getOperationalsMethod, getProductsMethod } from "../../firebase";
+import { handleFirebaseError } from "../../utils";
 
 import "./TransactionsFormScreen.css";
 
@@ -39,10 +40,10 @@ interface TransactionFormValues {
   transactionCategoryID: string;
   amount: number;
   stock?: number;
-  notes?: string;
 }
 
 const { required, number } = formRules;
+const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 
 export const TransactionFormScreen = () => {
   const [formInstance] = Form.useForm();
@@ -103,11 +104,19 @@ export const TransactionFormScreen = () => {
   }, [expenseType, fetchOperationals, fetchProducts]);
 
   useEffect(() => {
+    if (transactionType === TRANSACTION_TYPES.DEBIT) {
+      // Since I believe there's no DEBIT for Operationals
+      // we need to change it to products
+      setExpenseType(CATEGORY_TYPES.PRODUCT)
+    }
+  }, [transactionType])
+
+  useEffect(() => {
     formInstance.setFieldsValue({
       ...formInstance.getFieldsValue(),
       transactionCategoryID: undefined,
-    })
-  }, [expenseType, formInstance])
+    });
+  }, [expenseType, formInstance]);
 
   const handleTransactionDateChange = useCallback(
     (momentDate: moment.Moment | null, _: string) => {
@@ -132,10 +141,32 @@ export const TransactionFormScreen = () => {
 
   const submitTransactionData = useCallback(
     (values: TransactionFormValues) => {
+      if (!transactionDate) {
+        message.warning("Tanggal transaksi harus diisi!");
+        return;
+      }
+
       setIsLoading(true);
 
       try {
-        console.log(values);
+        let payload: TransactionPayload = {
+          transaction_date: transactionDate.format(),
+          transaction_type: transactionType,
+          amount: values.amount,
+          expense_type: expenseType,
+          expense_id: values.transactionCategoryID,
+        };
+
+        if (transactionType === TRANSACTION_TYPES.CREDIT) {
+          if (expenseType === CATEGORY_TYPES.PRODUCT) {
+            payload = {
+              ...payload,
+              stock: values.stock,
+            };
+          }
+        }
+
+        console.log(payload);
       } catch (error) {
         handleFirebaseError(error);
       }
@@ -205,17 +236,17 @@ export const TransactionFormScreen = () => {
               onChange={handleTransactionTypeChanged}
             >
               <Radio.Button
+                className="red block-radio-btn"
+                value={TRANSACTION_TYPES.CREDIT}
+              >
+                Pengeluaran
+              </Radio.Button>
+              <Radio.Button
                 type="success"
                 className="green block-radio-btn"
                 value={TRANSACTION_TYPES.DEBIT}
               >
                 Pemasukan
-              </Radio.Button>
-              <Radio.Button
-                className="red block-radio-btn"
-                value={TRANSACTION_TYPES.CREDIT}
-              >
-                Pengeluaran
               </Radio.Button>
             </Radio.Group>
           </Form.Item>
@@ -266,11 +297,11 @@ export const TransactionFormScreen = () => {
                 expenseType === CATEGORY_TYPES.OPERATIONAL
                   ? operationals.map((category: OperationalCategory) => ({
                       label: category.name,
-                      value: category.name,
+                      value: category.id,
                     }))
                   : products.map((product: ProductInventory) => ({
                       label: product.name,
-                      value: product.name,
+                      value: product.id,
                     }))
               }
             />
@@ -284,11 +315,13 @@ export const TransactionFormScreen = () => {
           >
             <InputNumber
               className="block-input"
-              min={0}
+              min={0 as number}
               step={1}
               addonBefore="Rp"
               size="large"
               placeholder="Masukkan jumlah transaksi"
+              parser={(displayValue) => numeral(displayValue).value() ?? 0}
+              formatter={(value, _) => numeral(value).format("0,0")}
             />
           </Form.Item>
           <Form.Item
@@ -317,6 +350,7 @@ export const TransactionFormScreen = () => {
               <Col xs={12}>
                 <Button
                   block
+                  size="large"
                   className="submit-btn"
                   type="primary"
                   htmlType="submit"

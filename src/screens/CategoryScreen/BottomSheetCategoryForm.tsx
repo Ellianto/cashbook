@@ -66,7 +66,7 @@ export const BottomSheetCategoryForm: React.FC<BottomSheetCategoryFormProps> = (
           `Kategori berhasil di${itemToEdit ? "ubah" : "tambahkan"}!`
         );
 
-        console.log(data)
+        console.log(data);
         handleBottomSheetClosed(true);
       } catch (error) {
         handleFirebaseError(error);
