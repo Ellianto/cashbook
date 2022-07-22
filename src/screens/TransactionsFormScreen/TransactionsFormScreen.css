@@ -32,3 +32,7 @@
   color: white !important;
   border-color: white !important;
 }
+
+.description-label {
+  padding-bottom: 4px !important;
+}

@@ -10,6 +10,8 @@ import {
   Button,
   Radio,
   RadioChangeEvent,
+  Descriptions,
+  Typography,
   Row,
   Col,
   message,
@@ -31,7 +33,7 @@ import {
 import { TransactionPayload } from "../../constants/payloads";
 import { formRules, constants } from "../../constants";
 
-import { getOperationalsMethod, getProductsMethod } from "../../firebase";
+import { getOperationalsMethod, getProductsMethod, addTransactionsMethod } from "../../firebase";
 import { handleFirebaseError } from "../../utils";
 
 import "./TransactionsFormScreen.css";
@@ -39,11 +41,12 @@ import "./TransactionsFormScreen.css";
 interface TransactionFormValues {
   transactionCategoryID: string;
   amount: number;
-  stock?: number;
+  qty?: number;
 }
 
 const { required, number } = formRules;
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
+const { Text } = Typography;
 
 export const TransactionFormScreen = () => {
   const [formInstance] = Form.useForm();
@@ -77,7 +80,7 @@ export const TransactionFormScreen = () => {
       handleFirebaseError(error);
     }
     setIsFetchingOptions(false);
-  }, []);
+  }, [operationals.length]);
 
   const fetchProducts = useCallback(async () => {
     if (products.length > 0) return;
@@ -93,7 +96,7 @@ export const TransactionFormScreen = () => {
       handleFirebaseError(error);
     }
     setIsFetchingOptions(false);
-  }, []);
+  }, [products.length]);
 
   useEffect(() => {
     if (expenseType === CATEGORY_TYPES.OPERATIONAL) {
@@ -107,9 +110,9 @@ export const TransactionFormScreen = () => {
     if (transactionType === TRANSACTION_TYPES.DEBIT) {
       // Since I believe there's no DEBIT for Operationals
       // we need to change it to products
-      setExpenseType(CATEGORY_TYPES.PRODUCT)
+      setExpenseType(CATEGORY_TYPES.PRODUCT);
     }
-  }, [transactionType])
+  }, [transactionType]);
 
   useEffect(() => {
     formInstance.setFieldsValue({
@@ -139,8 +142,15 @@ export const TransactionFormScreen = () => {
     []
   );
 
+  const resetSpecificFields = useCallback(() => {
+    formInstance.setFieldsValue({
+      amount: undefined,
+      qty: undefined,
+    })
+  }, [formInstance])
+
   const submitTransactionData = useCallback(
-    (values: TransactionFormValues) => {
+    async (values: TransactionFormValues) => {
       if (!transactionDate) {
         message.warning("Tanggal transaksi harus diisi!");
         return;
@@ -150,7 +160,7 @@ export const TransactionFormScreen = () => {
 
       try {
         let payload: TransactionPayload = {
-          transaction_date: transactionDate.format(),
+          transaction_date: transactionDate.format("YYYYMMDD"),
           transaction_type: transactionType,
           amount: values.amount,
           expense_type: expenseType,
@@ -161,19 +171,21 @@ export const TransactionFormScreen = () => {
           if (expenseType === CATEGORY_TYPES.PRODUCT) {
             payload = {
               ...payload,
-              stock: values.stock,
+              qty: values.qty,
             };
           }
         }
 
-        console.log(payload);
+        await addTransactionsMethod(payload)
+        message.success("Transaksi berhasil ditambahkan!")
+        resetSpecificFields()
       } catch (error) {
         handleFirebaseError(error);
       }
 
       setIsLoading(false);
     },
-    [transactionDate]
+    [transactionDate, transactionType, expenseType, resetSpecificFields]
   );
 
   const handleFormSubmit = useCallback(
@@ -187,12 +199,80 @@ export const TransactionFormScreen = () => {
         centered: true,
         icon: null,
         title: "Konfirmasi",
-        content:
-          "Here we try providing a very long content to see how the padding and the size matters",
+        content: (
+          <Descriptions
+            layout="vertical"
+            title="Pastikan data di bawah sudah benar"
+          >
+            <Descriptions.Item
+              className="description-label"
+              label="Tanggal Transaksi"
+            >
+              {moment(transactionDate).format("YYYY-MM-DD")}
+            </Descriptions.Item>
+            <Descriptions.Item
+              className="description-label"
+              label="Jenis Transaksi"
+            >
+              <Text
+                type={
+                  transactionType === TRANSACTION_TYPES.CREDIT
+                    ? "danger"
+                    : "success"
+                }
+              >
+                {transactionType === TRANSACTION_TYPES.CREDIT
+                  ? "Pengeluaran"
+                  : "Pemasukan"}
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item
+              className="description-label"
+              label="Kategori Pengeluaran"
+            >
+              {expenseType === CATEGORY_TYPES.PRODUCT
+                ? "Produk"
+                : "Operasional"}
+            </Descriptions.Item>
+            <Descriptions.Item
+              className="description-label"
+              label="Nama Kategori/Produk"
+            >
+              {(expenseType === CATEGORY_TYPES.PRODUCT
+                ? products.find(
+                    (product) => product.id === values.transactionCategoryID
+                  )?.name
+                : operationals.find(
+                    (ops) => ops.id === values.transactionCategoryID
+                  )?.name) ?? ""}
+            </Descriptions.Item>
+            <Descriptions.Item
+              className="description-label"
+              label="Jumlah Pengeluaran"
+            >
+              Rp. {numeral(values.amount).format("0,0")}
+            </Descriptions.Item>
+            {expenseType === CATEGORY_TYPES.PRODUCT && values.qty ? (
+              <Descriptions.Item
+                className="description-label"
+                label="Jumlah Pengeluaran"
+              >
+                {values.qty} kg
+              </Descriptions.Item>
+            ) : null}
+          </Descriptions>
+        ),
         onOk: () => submitTransactionData(values),
       });
     },
-    [transactionDate, submitTransactionData]
+    [
+      transactionDate,
+      transactionType,
+      expenseType,
+      products,
+      operationals,
+      submitTransactionData,
+    ]
   );
 
   return (
@@ -326,20 +406,21 @@ export const TransactionFormScreen = () => {
           </Form.Item>
           <Form.Item
             className="compact-form-item"
-            id="stock"
-            name="stock"
+            id="qty"
+            name="qty"
             label="Kuantitas barang"
             hidden={expenseType === CATEGORY_TYPES.OPERATIONAL}
             rules={
               expenseType === CATEGORY_TYPES.PRODUCT
-                ? number("Kuantitas barang tidak boleh kosong!")
+                ? number("Kuantitas barang tidak boleh kosong!", 0.1)
                 : []
             }
           >
             <InputNumber
               className="block-input"
-              min={0}
-              step={0.01}
+              min={0.1}
+              step={0.1}
+              precision={1}
               addonAfter="kg"
               size="large"
               placeholder="Masukkan kuantitas barang"
