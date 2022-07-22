@@ -1,5 +1,7 @@
 .bottom-tab-bar {
   padding: 0;
+  padding-top: 6px;
+  height: 100%;
   background: var(--theme-color, white)
 }
 

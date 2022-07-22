@@ -339,6 +339,7 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
         }
 
         let newEntry = {
+          last_updated: nowUNIX,
           expense_id: data.expense_id,
           amount: data.amount,
         };
@@ -356,9 +357,10 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
             // We're buying product (and outputting money) hence credit
             // so we add the stock here (and re-calculate avg price)
             productCategoryData.average_buy_price =
-              productCategoryData.average_buy_price *
-                productCategoryData.stock +
-              data.amount / (productCategoryData.stock + data.qty);
+              +(((productCategoryData.average_buy_price *
+                productCategoryData.stock) +
+                data.amount) /
+              (productCategoryData.stock + data.qty)).toFixed(2);
             productCategoryData.stock += data.qty;
           } else {
             // We're selling product (and get money) hence debit
@@ -367,12 +369,12 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
             productCategoryData.stock -= data.qty;
           }
 
-          tx.set(productCategoryRef, productCategoryData, { merge : true })
+          tx.set(productCategoryRef, productCategoryData, { merge: true });
         }
 
         // And finally write
-        tx.set(dateDocRef, dateAggrValue, { merge : true })
-        tx.set(newTransactionDocRef, newEntry, { merge : true })
+        tx.set(dateDocRef, dateAggrValue, { merge: true });
+        tx.set(newTransactionDocRef, newEntry, { merge: true });
       });
     } catch (error) {
       console.error(error);
@@ -391,6 +393,5 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
 // TODO: Implement "Aggregate/Group By" Functions for Dashboard
 // exports.getTransactions = generateHeavyRuntimeCloudFunctions().onCall(async (data, context) => {
 //   const { start_date, end_date } = data;
-
 
 // })

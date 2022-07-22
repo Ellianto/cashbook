@@ -33,7 +33,11 @@ import {
 import { TransactionPayload } from "../../constants/payloads";
 import { formRules, constants } from "../../constants";
 
-import { getOperationalsMethod, getProductsMethod, addTransactionsMethod } from "../../firebase";
+import {
+  getOperationalsMethod,
+  getProductsMethod,
+  addTransactionsMethod,
+} from "../../firebase";
 import { handleFirebaseError } from "../../utils";
 
 import "./TransactionsFormScreen.css";
@@ -107,14 +111,6 @@ export const TransactionFormScreen = () => {
   }, [expenseType, fetchOperationals, fetchProducts]);
 
   useEffect(() => {
-    if (transactionType === TRANSACTION_TYPES.DEBIT) {
-      // Since I believe there's no DEBIT for Operationals
-      // we need to change it to products
-      setExpenseType(CATEGORY_TYPES.PRODUCT);
-    }
-  }, [transactionType]);
-
-  useEffect(() => {
     formInstance.setFieldsValue({
       ...formInstance.getFieldsValue(),
       transactionCategoryID: undefined,
@@ -146,8 +142,8 @@ export const TransactionFormScreen = () => {
     formInstance.setFieldsValue({
       amount: undefined,
       qty: undefined,
-    })
-  }, [formInstance])
+    });
+  }, [formInstance]);
 
   const submitTransactionData = useCallback(
     async (values: TransactionFormValues) => {
@@ -167,18 +163,16 @@ export const TransactionFormScreen = () => {
           expense_id: values.transactionCategoryID,
         };
 
-        if (transactionType === TRANSACTION_TYPES.CREDIT) {
-          if (expenseType === CATEGORY_TYPES.PRODUCT) {
-            payload = {
-              ...payload,
-              qty: values.qty,
-            };
-          }
+        if (expenseType === CATEGORY_TYPES.PRODUCT) {
+          payload = {
+            ...payload,
+            qty: values.qty,
+          };
         }
 
-        await addTransactionsMethod(payload)
-        message.success("Transaksi berhasil ditambahkan!")
-        resetSpecificFields()
+        await addTransactionsMethod(payload);
+        message.success("Transaksi berhasil ditambahkan!");
+        resetSpecificFields();
       } catch (error) {
         handleFirebaseError(error);
       }
@@ -334,7 +328,6 @@ export const TransactionFormScreen = () => {
             className="compact-form-item"
             id="expense_status"
             label="Jenis Pengeluaran"
-            hidden={transactionType === TRANSACTION_TYPES.DEBIT}
             required={true}
           >
             <Radio.Group
