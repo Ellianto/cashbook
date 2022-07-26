@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Layout, Row, Col, Typography } from "antd";
+import { Layout, Row, Col, Typography, BackTop } from "antd";
 
 import { NavigationBar } from "../NavigationBar";
 import './ScreenTemplate.css'
@@ -29,7 +29,10 @@ export const ScreenTemplate: React.FC<ScreenTemplateProps> = (props) => {
           <Col className="text-center" flex="0 0 56px">{rightButton}</Col>
         </Row>
       </Header>
-      <Content className="content-container">{children}</Content>
+      <Content className="content-container">
+        {children}
+        <BackTop />  
+      </Content>
       <Footer className="bottom-nav-bar">
         <NavigationBar />
       </Footer>

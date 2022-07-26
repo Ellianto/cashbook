@@ -2,9 +2,12 @@
   padding: 4px 6px;
 }
 
+.date-submit-btn {
+  padding: 4px !important;
+}
+
 .date-interval-buttons {
   overflow-x: scroll !important;
-  border-left-width: 1px !important;
   margin: 4px 0 4px 2px !important;
   width: 100% !important;
   white-space: nowrap;
@@ -19,9 +22,16 @@
 .date-interval-buttons .ant-radio-button-wrapper {
   margin: 4px !important;
   border-radius: 16px !important;
+  border-left-width: 1px !important;
 }
 
-.date-interval-buttons .ant-radio-button-wrapper-checked {}
+.date-interval-buttons .ant-radio-button-wrapper-checked {
+  border-left-width: 1px !important;
+  color: white !important;
+  background: #52c41a !important;
+  border-color: #52c41a !important;
+
+}
 
 .ant-radio-button-wrapper:not(:first-child)::before {
   background: transparent !important;

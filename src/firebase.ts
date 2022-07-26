@@ -21,5 +21,6 @@ export const addOperationalMethod  = httpsCallable(firebaseFunctions, 'addOperat
 export const editProductMethod = httpsCallable(firebaseFunctions, 'editProduct')
 export const editOperationalMethod = httpsCallable(firebaseFunctions, 'editOperationals')
 export const addTransactionsMethod = httpsCallable(firebaseFunctions, 'addTransactions')
+export const getTransactionsListMethod = httpsCallable(firebaseFunctions, 'getTransactions')
 // export const deleteProductMethod = httpsCallable(firebaseFunctions, 'deleteProduct')
 // export const deleteOperationalMethod = httpsCallable(firebaseFunctions, 'deleteOperational')

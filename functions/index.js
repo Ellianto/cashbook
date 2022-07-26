@@ -261,7 +261,6 @@ exports.editOperationals = generateLightRuntimeCloudFunctions().onCall(
   }
 );
 
-// TODO: Improve this to also write to the collection on products
 exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
   async (data, context) => {
     // Check for auth
@@ -337,11 +336,105 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
 
 // TODO: Implement Edit for Transactions
 
-// TODO: Implement "Aggregate/Group By" Functions for Dashboard
-exports.getTransactions = generateHeavyRuntimeCloudFunctions().onCall(async (data, context) => {
-  const { start_date, end_date } = data;
-})
 
+exports.getTransactions = generateHeavyRuntimeCloudFunctions().onCall(async (data, context) => {
+  const { start_date : startDate, end_date: endDate } = data;
+
+  if (!context.auth && AUTH_REQUIRED) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Mohon login kembali!"
+    );
+  }
+
+  const dateTransactionsRef = rootCollectionReference.transactions;
+
+  try {
+    const transactionsQueryResult = await dateTransactionsRef
+      .where(admin.firestore.FieldPath.documentId(), '>=', startDate)
+      .where(admin.firestore.FieldPath.documentId(), '<=', endDate)
+      .get()
+
+    const transactionsResponse = []
+    if (!transactionsQueryResult.empty) {
+      for (let txDocs of transactionsQueryResult.docs) {
+        const txData = txDocs.data()
+
+        const txList = [];
+
+        const debitProductTxns = await txDocs.ref.collection(transactionSubcollectionReference['DEBIT']['PRODUCT']).get()
+        if (!debitProductTxns.empty) {
+          for (let internalTxnDoc of debitProductTxns.docs) {
+            const internalTxnData = internalTxnDoc.data()
+            txList.push({
+              transaction_id : internalTxnDoc.id,
+              transaction_type: "DEBIT",
+              category_type: "PRODUCT",
+              category_id: internalTxnData.expense_id,
+              amount: internalTxnData.amount,
+              qty: internalTxnData.qty,
+            })
+          }
+        }
+        const creditProductTxns = await txDocs.ref.collection(transactionSubcollectionReference['CREDIT']['PRODUCT']).get()
+        if (!creditProductTxns.empty) {
+          for (let internalTxnDoc of creditProductTxns.docs) {
+            const internalTxnData = internalTxnDoc.data()
+            txList.push({
+              transaction_id : internalTxnDoc.id,
+              transaction_type: "CREDIT",
+              category_type: "PRODUCT",
+              category_id: internalTxnData.expense_id,
+              amount: internalTxnData.amount,
+              qty: internalTxnData.qty,
+            })
+          }
+        }
+
+        const debitOpsTxns = await txDocs.ref.collection(transactionSubcollectionReference['DEBIT']['OPERATIONAL']).get()
+        if (!debitOpsTxns.empty) {
+          for (let internalTxnDoc of debitOpsTxns.docs) {
+            const internalTxnData = internalTxnDoc.data()
+            txList.push({
+              transaction_id : internalTxnDoc.id,
+              transaction_type: "DEBIT",
+              category_type: "OPERATIONAL",
+              category_id: internalTxnData.expense_id,
+              amount: internalTxnData.amount,
+            })
+          }
+        }
+
+        const creditOpsTxns = await txDocs.ref.collection(transactionSubcollectionReference['CREDIT']['OPERATIONAL']).get()
+        if (!creditOpsTxns.empty) {
+          for (let internalTxnDoc of creditOpsTxns.docs) {
+            const internalTxnData = internalTxnDoc.data()
+            txList.push({
+              transaction_id : internalTxnDoc.id,
+              transaction_type: "CREDIT",
+              category_type: "OPERATIONAL",
+              category_id: internalTxnData.expense_id,
+              amount: internalTxnData.amount,
+            })
+          }
+        }
+
+        transactionsResponse.push({
+          date: txDocs.id,
+          total_credit: txData.credit_sum,
+          total_debit: txData.debit_sum,
+          transactions: txList,
+        })
+      }
+    }
+
+    return {
+      transactions: transactionsResponse,
+    }
+  } catch (error) {
+    
+  }
+})
 
 const recalculateProductAveragePrices = async (productId, startTransactionDate) => {
   console.log(`Recalculating product average prices for product ID ${productId} starting from ${startTransactionDate}`)

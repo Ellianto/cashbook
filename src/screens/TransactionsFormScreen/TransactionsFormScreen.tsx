@@ -19,7 +19,7 @@ import {
 import moment from "moment";
 import numeral from "numeral";
 
-import { BackButton, ScreenTemplate } from "../../components";
+import { ScreenTemplate } from "../../components";
 import {
   OperationalCategory,
   ProductInventory,
@@ -270,7 +270,7 @@ export const TransactionFormScreen = () => {
   );
 
   return (
-    <ScreenTemplate title="Transaksi" leftButton={<BackButton />}>
+    <ScreenTemplate title="Transaksi">
       <Spin spinning={isLoading}>
         <Form
           layout="vertical"
