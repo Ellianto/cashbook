@@ -1,0 +1,28 @@
+.screen-container {
+  padding: 4px 6px;
+}
+
+.date-interval-buttons {
+  overflow-x: scroll !important;
+  border-left-width: 1px !important;
+  margin: 4px 0 4px 2px !important;
+  width: 100% !important;
+  white-space: nowrap;
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.date-interval-buttons::-webkit-scrollbar{
+  display: none;  /* Safari and Chrome */
+}
+
+.date-interval-buttons .ant-radio-button-wrapper {
+  margin: 4px !important;
+  border-radius: 16px !important;
+}
+
+.date-interval-buttons .ant-radio-button-wrapper-checked {}
+
+.ant-radio-button-wrapper:not(:first-child)::before {
+  background: transparent !important;
+}
