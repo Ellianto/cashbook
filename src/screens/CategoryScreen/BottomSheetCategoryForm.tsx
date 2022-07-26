@@ -15,11 +15,12 @@ import {
   editProductMethod,
 } from "../../firebase";
 import { handleFirebaseError } from "../../utils";
+import { CategoryTypeValues } from "../../constants/interfaces/CategoryTypes";
 
 interface BottomSheetCategoryFormProps {
   visible: boolean;
   itemToEdit: ProductInventory | OperationalCategory | null;
-  categoryView: string;
+  categoryView: CategoryTypeValues;
   handleBottomSheetClosed: (shouldRefresh?: boolean) => void;
 }
 
@@ -65,6 +66,7 @@ export const BottomSheetCategoryForm: React.FC<BottomSheetCategoryFormProps> = (
           `Kategori berhasil di${itemToEdit ? "ubah" : "tambahkan"}!`
         );
 
+        console.log(data);
         handleBottomSheetClosed(true);
       } catch (error) {
         handleFirebaseError(error);
