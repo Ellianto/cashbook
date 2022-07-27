@@ -16,7 +16,7 @@ import { constants } from "../../../constants";
 import "./TransactionsList.css"
 import { useReactToPrint } from 'react-to-print';
 
-const Html2Pdf =  require('js-html2pdf');
+const domToPdf = require( "dom-to-pdf")
 
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 interface TransactionsListViewProps {
@@ -86,9 +86,11 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
       const document = printIframe.contentDocument;
       if (document) {
         const html = document.getElementsByTagName("html")[0];
+        html.getElementsByTagName("body")[0].style.padding = "48px"
         console.log(html);
-        const exporter = new Html2Pdf(html);
-        await exporter.getPdf(true);
+        domToPdf(html, { filename : `rekap_${moment().format("YYYYMMDD_HHmmss")}.pdf`, overrideWidth: 720}, () => {
+          console.log("PDF Downloaded!")
+        })
       }
     },
   });
