@@ -172,7 +172,7 @@ export const CategoryScreen = () => {
                   >
                     <p className="product-stock">Stock : {item.stock ?? 0}</p>
                     <p className="product-avg">
-                      AVG Price : {item.average_price ?? 0}
+                      AVG Price : {item.average_buy_price ?? 0}
                     </p>
                   </Card>
                 </List.Item>
