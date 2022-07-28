@@ -1,6 +1,4 @@
 import React, { useMemo, useCallback } from 'react';
-import moment from "moment";
-import numeral from "numeral";
 
 import { Row, Col, Drawer, Card, Statistic, List, Typography, Space } from 'antd'
 
@@ -68,7 +66,7 @@ export const ProductDetailsBreakdown : React.FC<ProductDetailsBreakdownProps> = 
         </Col>
       </Row>
     </List.Item>
-  ), [])
+  ), [transactionType, summary])
 
   return (
     <Drawer

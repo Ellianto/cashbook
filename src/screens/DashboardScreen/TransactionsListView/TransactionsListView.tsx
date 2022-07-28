@@ -1,6 +1,4 @@
-import React, { useCallback, useRef } from 'react';
-import moment from "moment";
-import numeral from "numeral";
+import React, { useCallback, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
 import {
@@ -16,6 +14,7 @@ import { constants } from "../../../constants";
 
 import "./TransactionsList.css"
 import { dateFormatting, numberFormatting } from '../../../utils';
+import { TransactionDetails } from './TransactionDetails';
 
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 interface TransactionsListViewProps {
@@ -27,6 +26,10 @@ interface TransactionsListViewProps {
 export const TransactionsListView : React.FC<TransactionsListViewProps> = (props) => {
   const { data = [], getProductsName = () => '', getOperationalsName = () => '' } = props
   const ref = useRef(null);
+
+  const [selectedTransactionDate, setSelectedTransactionDate] = useState<string|null>(null)
+  const [selectedTransactionItem, setSelectedTransactionItem] = useState<TransactionItem|null>(null)
+  const [showTransactionDetails, setShowTransactionDetails] = useState<boolean>(false)
 
   const generateTableColumns = useCallback((tx : TransactionsData) => {
     return [
@@ -83,6 +86,18 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
     removeAfterPrint: true,
   });
 
+  const handleRowClicked = useCallback((record : TransactionItem, txDate : string) => {
+    setSelectedTransactionDate(txDate)
+    setSelectedTransactionItem(record)
+    setShowTransactionDetails(true)
+  }, [])
+
+  const hideTransactionDetails = useCallback(() => {
+    setSelectedTransactionDate(null)
+    setSelectedTransactionItem(null)
+    setShowTransactionDetails(false)
+  }, [])
+
   return (
     <div>
       <div ref={ref}>
@@ -102,6 +117,9 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
           className="tx-table"
           sticky={true}
           pagination={false}
+          onRow={(record, idx) => ({
+            onClick: (_) => handleRowClicked(record, item.date)
+          })}
         />
       )}
     />
@@ -110,6 +128,16 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
     <Button block type="primary" onClick={handlePrintTransactionList}>
       Print
     </Button>
+    {selectedTransactionDate && selectedTransactionItem && (
+      <TransactionDetails 
+      visible={showTransactionDetails}
+      txDetails={selectedTransactionItem}
+      txDate={selectedTransactionDate}
+      closeDrawer={hideTransactionDetails}
+      getProductsName={getProductsName}
+      getOperationalsName={getOperationalsName}
+    />
+    )}
     </div>
   )
 }
