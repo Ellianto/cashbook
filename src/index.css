@@ -29,3 +29,7 @@ code {
   min-height: 100vh;
   overflow-x: hidden;
 }
+
+.ant-back-top {
+  bottom: 64px !important;
+}

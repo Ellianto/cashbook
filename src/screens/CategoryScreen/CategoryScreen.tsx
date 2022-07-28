@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { List, Card, Button, Segmented, Empty, Spin } from "antd";
 import { EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
 
-import { BackButton, ScreenTemplate } from "../../components";
+import { ScreenTemplate } from "../../components";
 import { BottomSheetCategoryForm } from "./BottomSheetCategoryForm";
 
 import {
@@ -133,7 +133,6 @@ export const CategoryScreen = () => {
   return (
     <ScreenTemplate
       title="Kategori"
-      leftButton={<BackButton />}
       rightButton={
         <Button
           className="add-button"
@@ -173,7 +172,7 @@ export const CategoryScreen = () => {
                   >
                     <p className="product-stock">Stock : {item.stock ?? 0}</p>
                     <p className="product-avg">
-                      AVG Price : {item.average_price ?? 0}
+                      AVG Price : {item.average_buy_price ?? 0}
                     </p>
                   </Card>
                 </List.Item>

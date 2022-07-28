@@ -1,0 +1,20 @@
+.column-data {
+  font-size: 0.8em !important;
+}
+
+.column-data.debit {
+  color: #419716b3 !important;
+}
+
+.column-data.credit {
+  color: #f33759ca !important;
+}
+
+.tx-table {
+  margin-bottom: 16px !important;
+}
+
+.tx-table th {
+  font-size: 0.8em !important;
+  font-weight: 700 !important;
+}

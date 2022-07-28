@@ -19,7 +19,7 @@ import {
 import moment from "moment";
 import numeral from "numeral";
 
-import { BackButton, ScreenTemplate } from "../../components";
+import { ScreenTemplate } from "../../components";
 import {
   OperationalCategory,
   ProductInventory,
@@ -38,7 +38,7 @@ import {
   getProductsMethod,
   addTransactionsMethod,
 } from "../../firebase";
-import { handleFirebaseError } from "../../utils";
+import { dateFormatting, handleFirebaseError, numberFormatting } from "../../utils";
 
 import "./TransactionsFormScreen.css";
 
@@ -156,7 +156,7 @@ export const TransactionFormScreen = () => {
 
       try {
         let payload: TransactionPayload = {
-          transaction_date: transactionDate.format("YYYYMMDD"),
+          transaction_date: dateFormatting.formatForStorage(transactionDate),
           transaction_type: transactionType,
           amount: values.amount,
           expense_type: expenseType,
@@ -202,7 +202,7 @@ export const TransactionFormScreen = () => {
               className="description-label"
               label="Tanggal Transaksi"
             >
-              {moment(transactionDate).format("YYYY-MM-DD")}
+              {dateFormatting.formatSimpleDisplay(transactionDate)}
             </Descriptions.Item>
             <Descriptions.Item
               className="description-label"
@@ -222,7 +222,7 @@ export const TransactionFormScreen = () => {
             </Descriptions.Item>
             <Descriptions.Item
               className="description-label"
-              label="Kategori Pengeluaran"
+              label={`Kategori ${transactionType === TRANSACTION_TYPES.CREDIT ? 'Pengeluaran' : 'Pemasukan'}`}
             >
               {expenseType === CATEGORY_TYPES.PRODUCT
                 ? "Produk"
@@ -242,14 +242,14 @@ export const TransactionFormScreen = () => {
             </Descriptions.Item>
             <Descriptions.Item
               className="description-label"
-              label="Jumlah Pengeluaran"
+              label={`Jumlah ${transactionType === TRANSACTION_TYPES.CREDIT ? 'Pengeluaran' : 'Pemasukan'}`}
             >
-              Rp. {numeral(values.amount).format("0,0")}
+              Rp. {numberFormatting.formatIDRCurrencyNumber(values.amount)}
             </Descriptions.Item>
             {expenseType === CATEGORY_TYPES.PRODUCT && values.qty ? (
               <Descriptions.Item
                 className="description-label"
-                label="Jumlah Pengeluaran"
+                label="Kuantitas Produk"
               >
                 {values.qty} kg
               </Descriptions.Item>
@@ -270,7 +270,7 @@ export const TransactionFormScreen = () => {
   );
 
   return (
-    <ScreenTemplate title="Transaksi" leftButton={<BackButton />}>
+    <ScreenTemplate title="Transaksi">
       <Spin spinning={isLoading}>
         <Form
           layout="vertical"
@@ -327,7 +327,7 @@ export const TransactionFormScreen = () => {
           <Form.Item
             className="compact-form-item"
             id="expense_status"
-            label="Jenis Pengeluaran"
+            label="Jenis Kategori"
             required={true}
           >
             <Radio.Group
@@ -394,7 +394,7 @@ export const TransactionFormScreen = () => {
               size="large"
               placeholder="Masukkan jumlah transaksi"
               parser={(displayValue) => numeral(displayValue).value() ?? 0}
-              formatter={(value, _) => numeral(value).format("0,0")}
+              formatter={(value, _) => numberFormatting.formatIDRCurrencyNumber(value ?? 0)}
             />
           </Form.Item>
           <Form.Item
