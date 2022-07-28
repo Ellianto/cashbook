@@ -15,6 +15,7 @@ import { TransactionsData, TransactionItem } from "../../../constants/interfaces
 import { constants } from "../../../constants";
 
 import "./TransactionsList.css"
+import { dateFormatting, numberFormatting } from '../../../utils';
 
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 interface TransactionsListViewProps {
@@ -30,7 +31,7 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
   const generateTableColumns = useCallback((tx : TransactionsData) => {
     return [
       {
-        title: moment(tx.date).format('LL'),
+        title: dateFormatting.formatForHumanDisplay(tx.date),
         align: "left",
         dataIndex: "transaction_id",
         className: "column-data",
@@ -44,7 +45,7 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
         },
       },
       {
-        title: tx.total_debit === 0 ? "-" : `Rp. ${numeral(tx.total_debit).format("0,0")}`,
+        title: tx.total_debit === 0 ? "-" : `Rp. ${numberFormatting.formatIDRCurrencyNumber(tx.total_debit)}`,
         align: "right",
         dataIndex: "amount",
         key: "debit_amount",
@@ -52,14 +53,14 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
         className: "debit column-data",
         render: (_ : string, record: TransactionItem) => {
           if (record.transaction_type === TRANSACTION_TYPES.DEBIT) {
-            return "Rp. " + numeral(record.amount).format("0,0")
+            return "Rp. " + numberFormatting.formatIDRCurrencyNumber(record.amount)
           }
 
           return "-"
         }
       },
       {
-        title: tx.total_credit === 0 ? "-" : `Rp. ${numeral(tx.total_credit).format("0,0")}`,
+        title: tx.total_credit === 0 ? "-" : `Rp. ${numberFormatting.formatIDRCurrencyNumber(tx.total_credit)}`,
         align: "right",
         dataIndex: "amount",
         key: "credit_amount",
@@ -67,7 +68,7 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
         className: "credit column-data",
         render: (_ : string, record: TransactionItem) => {
           if (record.transaction_type === TRANSACTION_TYPES.CREDIT) {
-            return "Rp. " + numeral(record.amount).format("0,0")
+            return "Rp. " + numberFormatting.formatIDRCurrencyNumber(record.amount)
           }
 
           return "-"

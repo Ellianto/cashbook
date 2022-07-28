@@ -13,9 +13,9 @@ import { constants } from '../../../../constants';
 import "./ProductSummaryBreakdown.css"
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { ProductDetailsBreakdown } from '../ProductDetailsBreakdown';
+import { numberFormatting } from '../../../../utils';
 
 const { TRANSACTION_TYPES } = constants
-
 interface ProductSummaryBreakdownProps {
   visible: boolean
   data: ProductSummaryData
@@ -41,7 +41,7 @@ export const ProductSummaryBreakdown : React.FC<ProductSummaryBreakdownProps> = 
   }, [])
 
   const renderProductItemSummary = useCallback((item : ProductAggregateData) => {
-    const percentage = Math.round(((summaryType === TRANSACTION_TYPES.CREDIT ? (item.sumCredit / data.sumCredit) : (item.sumDebit / data.sumDebit)) * 100) * 100) / 100
+    const percentage = numberFormatting.roundTo2Decimals((summaryType === TRANSACTION_TYPES.CREDIT ? (item.sumCredit / data.sumCredit) : (item.sumDebit / data.sumDebit)) * 100)
 
     return (
       <List.Item

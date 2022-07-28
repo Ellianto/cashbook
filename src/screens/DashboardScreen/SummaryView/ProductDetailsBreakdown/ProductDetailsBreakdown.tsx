@@ -8,6 +8,7 @@ import { constants } from '../../../../constants';
 import { ProductAggregateData, TransactionItem, TransactionsData, TransactionTypeValues } from '../../../../constants/interfaces';
 
 import "./ProductDetailsBreakdown.css"
+import { dateFormatting, numberFormatting } from '../../../../utils';
 
 const { TRANSACTION_TYPES, CATEGORY_TYPES } = constants
 const { Text } = Typography
@@ -56,13 +57,13 @@ export const ProductDetailsBreakdown : React.FC<ProductDetailsBreakdownProps> = 
           <Space direction="vertical">
           <Text>{summary.name} ({item.qty} kg)</Text>
           <Text type="secondary">
-            {moment(item.date).format("LL")}
+            {dateFormatting.formatForHumanDisplay(item.date)}
           </Text>
           </Space>
         </Col>
         <Col xs={12} style={{ textAlign: "right" }}>
           <Text className={transactionType === TRANSACTION_TYPES.CREDIT ? "red" : "green"}>
-            Rp. {numeral(item.amount).format("0,0")}
+            Rp. {numberFormatting.formatIDRCurrencyNumber(item.amount)}
           </Text>
         </Col>
       </Row>

@@ -38,7 +38,7 @@ import {
   getProductsMethod,
   addTransactionsMethod,
 } from "../../firebase";
-import { handleFirebaseError } from "../../utils";
+import { dateFormatting, handleFirebaseError, numberFormatting } from "../../utils";
 
 import "./TransactionsFormScreen.css";
 
@@ -156,7 +156,7 @@ export const TransactionFormScreen = () => {
 
       try {
         let payload: TransactionPayload = {
-          transaction_date: transactionDate.format("YYYYMMDD"),
+          transaction_date: dateFormatting.formatForStorage(transactionDate),
           transaction_type: transactionType,
           amount: values.amount,
           expense_type: expenseType,
@@ -202,7 +202,7 @@ export const TransactionFormScreen = () => {
               className="description-label"
               label="Tanggal Transaksi"
             >
-              {moment(transactionDate).format("YYYY-MM-DD")}
+              {dateFormatting.formatSimpleDisplay(transactionDate)}
             </Descriptions.Item>
             <Descriptions.Item
               className="description-label"
@@ -244,7 +244,7 @@ export const TransactionFormScreen = () => {
               className="description-label"
               label={`Jumlah ${transactionType === TRANSACTION_TYPES.CREDIT ? 'Pengeluaran' : 'Pemasukan'}`}
             >
-              Rp. {numeral(values.amount).format("0,0")}
+              Rp. {numberFormatting.formatIDRCurrencyNumber(values.amount)}
             </Descriptions.Item>
             {expenseType === CATEGORY_TYPES.PRODUCT && values.qty ? (
               <Descriptions.Item
@@ -394,7 +394,7 @@ export const TransactionFormScreen = () => {
               size="large"
               placeholder="Masukkan jumlah transaksi"
               parser={(displayValue) => numeral(displayValue).value() ?? 0}
-              formatter={(value, _) => numeral(value).format("0,0")}
+              formatter={(value, _) => numberFormatting.formatIDRCurrencyNumber(value ?? 0)}
             />
           </Form.Item>
           <Form.Item

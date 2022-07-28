@@ -18,7 +18,7 @@ import { OperationalCategory, ProductInventory, TransactionItem, TransactionsDat
 import { GetOperationalsResponse, GetProductsResponse, GetTransactionsResponse } from "../../../constants/responses";
 
 import { getOperationalsMethod, getProductsMethod, getTransactionsListMethod } from "../../../firebase";
-import { handleFirebaseError } from "../../../utils";
+import { handleFirebaseError, dateFormatting } from "../../../utils";
 
 import { TransactionsListView } from "../TransactionsListView";
 import { SummaryView } from "../SummaryView";
@@ -130,8 +130,8 @@ export const DashboardScreen = () => {
     setIsLoading(true);
     try {
       const { data } = await getTransactionsListMethod({
-        start_date : startDate.format("YYYYMMDD"),
-        end_date : endDate.format("YYYYMMDD"),
+        start_date : dateFormatting.formatForStorage(startDate) ,
+        end_date : dateFormatting.formatForStorage(endDate),
       });
       if (data) {
         const txnsData = (data as GetTransactionsResponse).transactions;
