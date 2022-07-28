@@ -15,7 +15,6 @@
     "@types/react": "^18.0.15",
     "@types/react-dom": "^18.0.6",
     "antd": "^4.21.6",
-    "dom-to-pdf": "^0.3.0",
     "moment": "^2.29.4",
     "numeral": "^2.0.6",
     "react": "^18.2.0",

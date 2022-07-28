@@ -82,17 +82,6 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
     onPrintError: console.error,
     content: () => ref.current,
     removeAfterPrint: true,
-    print: async (printIframe : HTMLIFrameElement) => {
-      const document = printIframe.contentDocument;
-      if (document) {
-        const html = document.getElementsByTagName("html")[0];
-        html.getElementsByTagName("body")[0].style.padding = "48px"
-        console.log(html);
-        domToPdf(html, { filename : `rekap_${moment().format("YYYYMMDD_HHmmss")}.pdf`, overrideWidth: 720}, () => {
-          console.log("PDF Downloaded!")
-        })
-      }
-    },
   });
 
   return (

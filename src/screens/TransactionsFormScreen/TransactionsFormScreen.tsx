@@ -222,7 +222,7 @@ export const TransactionFormScreen = () => {
             </Descriptions.Item>
             <Descriptions.Item
               className="description-label"
-              label="Kategori Pengeluaran"
+              label={`Kategori ${transactionType === TRANSACTION_TYPES.CREDIT ? 'Pengeluaran' : 'Pemasukan'}`}
             >
               {expenseType === CATEGORY_TYPES.PRODUCT
                 ? "Produk"
@@ -242,14 +242,14 @@ export const TransactionFormScreen = () => {
             </Descriptions.Item>
             <Descriptions.Item
               className="description-label"
-              label="Jumlah Pengeluaran"
+              label={`Jumlah ${transactionType === TRANSACTION_TYPES.CREDIT ? 'Pengeluaran' : 'Pemasukan'}`}
             >
               Rp. {numeral(values.amount).format("0,0")}
             </Descriptions.Item>
             {expenseType === CATEGORY_TYPES.PRODUCT && values.qty ? (
               <Descriptions.Item
                 className="description-label"
-                label="Jumlah Pengeluaran"
+                label="Kuantitas Produk"
               >
                 {values.qty} kg
               </Descriptions.Item>
