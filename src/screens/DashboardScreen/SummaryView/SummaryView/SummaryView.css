@@ -1,0 +1,19 @@
+.compact-card .ant-card-body {
+  padding: 16px 12px !important;
+}
+
+.ant-statistic-title {
+  color: black !important;
+}
+
+.general-statistic {
+  padding: 12px !important;
+}
+
+.compact-card .ant-statistic-title {
+  font-size: 0.8em !important;
+}
+
+.summary-container {
+  padding: 4px;
+}

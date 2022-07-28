@@ -1,6 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import moment from "moment";
 import numeral from "numeral";
+import { useReactToPrint } from 'react-to-print';
 
 import {
   List,
@@ -14,9 +15,6 @@ import { TransactionsData, TransactionItem } from "../../../constants/interfaces
 import { constants } from "../../../constants";
 
 import "./TransactionsList.css"
-import { useReactToPrint } from 'react-to-print';
-
-const domToPdf = require( "dom-to-pdf")
 
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 interface TransactionsListViewProps {

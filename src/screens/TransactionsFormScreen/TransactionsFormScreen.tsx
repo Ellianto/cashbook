@@ -327,7 +327,7 @@ export const TransactionFormScreen = () => {
           <Form.Item
             className="compact-form-item"
             id="expense_status"
-            label="Jenis Pengeluaran"
+            label="Jenis Kategori"
             required={true}
           >
             <Radio.Group

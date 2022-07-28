@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 
 import {
   Row,
@@ -7,11 +7,20 @@ import {
   Statistic,
 } from 'antd'
 
-import { TransactionsData, TransactionItem } from "../../../constants/interfaces";
+import { TransactionsData, TransactionItem,
+  ProductAggregateData,
+  ProductSummaryData,
+  OperationalAggregateData,
+  OperationalSummaryData,
+  SummaryData,
+  TransactionTypeValues,
+} from "../../../../constants/interfaces";
 
-import { constants } from "../../../constants";
+import { constants } from "../../../../constants";
 
 import "./SummaryView.css"
+
+import { ProductSummaryBreakdown } from '../ProductSummaryBreakdown';
 
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 
@@ -21,41 +30,12 @@ interface SummaryViewProps {
   getOperationalsName?: (item : TransactionItem) => string
 }
 
-interface ProductAggregateData {
-  id: string;
-  sumCredit : number;
-  sumDebit : number;
-  sumQtyIn : number;
-  sumQtyOut : number;
-}
-
-interface ProductSummaryData {
-  sumCredit : number;
-  sumDebit : number;
-  sumQtyIn : number;
-  sumQtyOut : number;
-  products: ProductAggregateData[];
-}
-
-interface OperationalAggregateData {
-  id : string;
-  sumCredit : number;
-  sumDebit : number;
-}
-
-interface OperationalSummaryData {
-  sumCredit : number;
-  sumDebit : number;
-  operationals: OperationalAggregateData[];
-}
-
-interface SummaryData {
-  productsSummary: ProductSummaryData
-  opsSummary: OperationalSummaryData
-}
-
 export const SummaryView : React.FC<SummaryViewProps> = (props) => {
   const { data = [], getProductsName = () => '', getOperationalsName = () => '' } = props
+
+  const [isProductSummaryVisible, setIsProductSummaryVisible] = useState<boolean>(false)
+  const [isOpsSummaryVisible, setIsOpsSummaryVisible] = useState<boolean>(false)
+  const [selectedSummaryType, setSelectedSummaryType] = useState<TransactionTypeValues>(TRANSACTION_TYPES.CREDIT)
   
   const summaryData : SummaryData = useMemo(() => {
     const productsSummary : ProductSummaryData = {
@@ -84,6 +64,7 @@ export const SummaryView : React.FC<SummaryViewProps> = (props) => {
             } else {
               opsSummary.operationals.push({
                 id : internalTxn.category_id,
+                name: getOperationalsName(internalTxn),
                 sumCredit: internalTxn.amount,
                 sumDebit: 0,
               })
@@ -95,6 +76,7 @@ export const SummaryView : React.FC<SummaryViewProps> = (props) => {
             } else {
               opsSummary.operationals.push({
                 id : internalTxn.category_id,
+                name: getOperationalsName(internalTxn),
                 sumDebit: internalTxn.amount,
                 sumCredit: 0,
               })
@@ -111,6 +93,7 @@ export const SummaryView : React.FC<SummaryViewProps> = (props) => {
             } else {
               productsSummary.products.push({
                 id : internalTxn.category_id,
+                name: getProductsName(internalTxn),
                 sumCredit: internalTxn.amount,
                 sumQtyIn: internalTxn.qty ?? 0,
                 sumDebit: 0,
@@ -125,6 +108,7 @@ export const SummaryView : React.FC<SummaryViewProps> = (props) => {
             } else {
               productsSummary.products.push({
                 id : internalTxn.category_id,
+                name: getProductsName(internalTxn),
                 sumDebit: internalTxn.amount,
                 sumQtyIn: 0,
                 sumCredit: 0,
@@ -140,30 +124,108 @@ export const SummaryView : React.FC<SummaryViewProps> = (props) => {
       productsSummary,
       opsSummary,
     }
-  }, [data])
+  }, [data, getOperationalsName, getProductsName])
+
+  const showProductDebitDetails = useCallback(() => {
+    setIsProductSummaryVisible(true);
+    setIsOpsSummaryVisible(false);
+    setSelectedSummaryType(TRANSACTION_TYPES.DEBIT)
+  }, [])
+
+  const showProductCreditDetails = useCallback(() => {
+    setIsProductSummaryVisible(true);
+    setIsOpsSummaryVisible(false);
+    setSelectedSummaryType(TRANSACTION_TYPES.CREDIT)
+  }, [])
+
+  const showOpsDebitDetails = useCallback(() => {
+    setIsProductSummaryVisible(false);
+    setIsOpsSummaryVisible(true);
+    setSelectedSummaryType(TRANSACTION_TYPES.DEBIT)
+  }, [])
+
+  const showOpsCreditDetails = useCallback(() => {
+    setIsProductSummaryVisible(false);
+    setIsOpsSummaryVisible(true);
+    setSelectedSummaryType(TRANSACTION_TYPES.CREDIT)
+  }, [])
+
+  const handleDrawerClosed = useCallback(() => {
+    setIsProductSummaryVisible(false);
+    setIsOpsSummaryVisible(false);
+  }, [])
   
   return (
+    <div>
+    <ProductSummaryBreakdown 
+      visible={isProductSummaryVisible}
+      summaryType={selectedSummaryType}
+      closeDrawer={handleDrawerClosed}
+      data={summaryData.productsSummary}
+      transactionsData={data}
+    />
     <Row gutter={[8, 8]} className="summary-container">
       <Col xs={12}>
-        <Card className="compact-card">
           <Statistic 
+            className="general-statistic"
             title="Total Pemasukan"
-            value={summaryData.productsSummary.sumDebit + summaryData.opsSummary.sumDebit}
+            value={(summaryData.productsSummary.sumDebit + summaryData.opsSummary.sumDebit) || "-"}
+            prefix="Rp. "
+            valueStyle={{ color: '#3f8600', fontSize: "1.2em" }}
+          />
+      </Col>
+      <Col xs={12}>
+          <Statistic 
+            className="general-statistic"
+
+            title="Total Pengeluaran"
+            value={(summaryData.productsSummary.sumCredit + summaryData.opsSummary.sumCredit) || "-"} 
+            prefix="Rp. "
+            valueStyle={{ color: '#cf1322', fontSize: "1.2em" }}
+          />
+      </Col>
+      <Col xs={12}>
+        <Card className="compact-card" onClick={showProductDebitDetails}>
+          <Statistic 
+            title="Total Pemasukan (Produk)"
+            value={summaryData.productsSummary.sumDebit || "-"}
             prefix="Rp. "
             valueStyle={{ color: '#3f8600', fontSize: "1.2em" }}
           />
         </Card>
       </Col>
       <Col xs={12}>
-        <Card className="compact-card">
+        <Card className="compact-card" onClick={showProductCreditDetails}>
           <Statistic 
-            title="Total Pengeluaran"
-            value={summaryData.productsSummary.sumCredit + summaryData.opsSummary.sumCredit}
+            title="Total Pengeluaran (Produk)"
+            value={summaryData.productsSummary.sumCredit || "-"}
+            prefix="Rp. "
+            valueStyle={{ color: '#cf1322', fontSize: "1.2em" }}
+          />
+        </Card>
+      </Col>
+      <Col xs={12}>
+        <Card className="compact-card" onClick={showOpsDebitDetails}>
+          <Statistic 
+            title="Total Pemasukan (Operasional)"
+            value={summaryData.opsSummary.sumDebit || "-"}
+            prefix="Rp. "
+            valueStyle={{ color: '#3f8600', fontSize: "1.2em" }}
+          />
+        </Card>
+      </Col>
+      <Col xs={12}>
+        <Card className="compact-card" onClick={showOpsCreditDetails}>
+          <Statistic 
+            title="Total Pengeluaran (Operasional)"
+            value={summaryData.opsSummary.sumCredit || "-"}
             prefix="Rp. "
             valueStyle={{ color: '#cf1322', fontSize: "1.2em" }}
           />
         </Card>
       </Col>
     </Row>
+
+    </div>
   )
 }
