@@ -303,10 +303,8 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
     try {
       // Transaction that will save data to the "transactions" collection
       await admin.firestore().runTransaction(async (tx) => {
-        const nowUNIX = new Date().valueOf();
 
         let newEntry = {
-          last_updated: nowUNIX,
           expense_id: data.expense_id,
           amount: data.amount,
         };
@@ -336,6 +334,72 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
 
 // TODO: Implement Edit for Transactions
 
+// TODO: Implement Delete for Transactions
+exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (data, context) => {
+  if (!context.auth && AUTH_REQUIRED) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Mohon login kembali!"
+    );
+  }
+
+  // Check for missing data 
+  if (!data.transaction_id) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan ID transaksi terisi dengan benar!",
+    );
+  }
+
+  if (!data.transaction_date) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan tanggal transaksi terisi dengan benar!"
+    );
+  }
+
+  if (!data.transaction_type) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan jenis transaksi terisi dengan benar!"
+    );
+  }
+
+  if (!data.expense_type) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan kategori terisi dengan benar!"
+    );
+  }
+
+  const transactionsCollectionReference =
+    rootCollectionReference.transactions;
+
+  const dateDocRef = transactionsCollectionReference.doc(data.transaction_date)
+
+  const txSubcollRef = dateDocRef.collection(transactionSubcollectionReference[data.transaction_type][
+    data.expense_type
+  ])
+  const targetTransactionDocRef = txSubcollRef.doc(data.transaction_id)
+
+  const targetTransaction = await targetTransactionDocRef.get()
+  if (!targetTransaction.exists) {
+    throw new functions.https.HttpsError(
+      "not-found",
+      "Transaksi tidak ditemukan!",
+    );
+  }
+
+  try {
+    await targetTxDocRef.delete()
+  } catch (error) {
+    console.error(error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Error mencatat transaksi! Coba lagi dalam beberapa saat!"
+    );
+  }
+})
 
 exports.getTransactions = generateHeavyRuntimeCloudFunctions().onCall(async (data, context) => {
   const { start_date : startDate, end_date: endDate } = data;
@@ -493,7 +557,6 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
     docData.total_debit = debitSum;
     docData.total_qty_out = qtyOutSum;
 
-    // TODO: Confirm this is correct
     const deltaStock = qtyInSum - qtyOutSum;
     if (!prevDoc) {
       // No previous doc means that this document is the earliest
@@ -510,9 +573,6 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
 
       docData.current_stock = prevDoc.current_stock + deltaStock;
     }
-
-    const nowUNIX = new Date().valueOf();
-    docData.last_updated = nowUNIX;
 
     const docRef = productTransactionsRef.doc(doc.id)
     await docRef.set(docData, { merge : true })
@@ -566,10 +626,8 @@ exports.onDateTransactionCreated = functions.firestore
 
         const txnDateDoc = await tx.get(txnDateDocRef)
         if (!txnDateDoc.exists) {
-          const nowUNIX = new Date().valueOf();
 
           let newData = {
-            last_updated: nowUNIX,
             total_credit: 0,
             total_debit: 0,
           };
@@ -620,14 +678,12 @@ exports.onDateTransactionCreated = functions.firestore
         const transactionDateDoc = await tx.get(transactionDateDocRef)
 
         let dateAggrValue = null;
-        const nowUNIX = new Date().valueOf();
         if (transactionDateDoc.exists) {
           dateAggrValue = transactionDateDoc.data();
         } else {
           dateAggrValue = {
             credit_sum: 0,
             debit_sum: 0,
-            last_updated: nowUNIX,
           };
         }
 
@@ -644,7 +700,6 @@ exports.onDateTransactionCreated = functions.firestore
             break;
         }
 
-        dateAggrValue.last_updated = nowUNIX;
         await tx.set(transactionDateDocRef, dateAggrValue, { merge : true })
       })
 
@@ -654,6 +709,80 @@ exports.onDateTransactionCreated = functions.firestore
       // }
     } catch (error) {
       console.error(error)
+    }
+  })
+
+exports.onDateTransactionDeleted = functions.firestore
+  .document("/transactions/{transactionDate}/{transactionType}/{transactionId}")
+  .onDelete(async (snap, context) => {
+    const data = snap.data()
+
+    const { transactionDate, transactionType, transactionId } = context.params;
+
+    const transactionDateDocRef = rootCollectionReference.transactions.doc(transactionDate);
+
+    console.log(`Triggering onTransactionDeleted due to removed doc /transactions/${transactionDate}/${transactionType}/${transactionId}`)
+    try {
+      // Transaction to also remove the document stored in the product/operationals subcollection
+      await admin.firestore().runTransaction(async (tx) => {
+        let subDocRef = null;
+  
+        switch (transactionType) {
+          case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
+            subDocRef = txnDateDocRef.collection('debit_operational_transactions').doc(transactionId)
+            break;
+          case transactionSubcollectionReference['CREDIT']['OPERATIONAL']:
+            subDocRef = txnDateDocRef.collection('credit_operational_transactions').doc(transactionId)
+            break;
+          case transactionSubcollectionReference['DEBIT']['PRODUCT']:
+            subDocRef = txnDateDocRef.collection('debit_product_transactions').doc(transactionId)
+            break;
+          case transactionSubcollectionReference['CREDIT']['PRODUCT']:
+            subDocRef = txnDateDocRef.collection('credit_product_transactions').doc(transactionId)
+            break;
+          default:
+            break;
+        }
+
+        const targetTransaction = await subDocRef.get()
+        if (!targetTransaction.exists) {
+          throw new functions.https.HttpsError(
+            "not-found",
+            "Transaksi tidak ditemukan!",
+          );
+        }
+
+        await targetTransaction.delete()
+      })
+
+      // Transaction to update the aggregate value 
+      await admin.firestore().runTransaction(async (tx) => {
+        const txDateDoc = await tx.get(transactionDateDocRef);
+
+        if (txDateDoc.exists) {
+          const docData = txDateDoc.data()
+
+          switch (transactionType) {
+            case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
+            case transactionSubcollectionReference['DEBIT']['PRODUCT']:
+              // The removed document is a DEBIT transaction
+              docData.debit_sum -= data.amount
+              break;
+            case transactionSubcollectionReference['CREDIT']['OPERATIONAL']:
+            case transactionSubcollectionReference['CREDIT']['PRODUCT']:
+              // The removed document is a DEBIT transaction
+              docData.credit_sum -= data.amount
+              break;
+            default:
+              break;
+          }
+
+          await tx.set(transactionDateDocRef, docData, { merge : true })
+        }
+      })
+    } catch (error) {
+      console.error(error)
+      throw error
     }
   })
 
@@ -691,12 +820,9 @@ exports.onOperationalTransactionCreated = functions.firestore
           totalDebit += debitData.amount;
         }
 
-        const nowUNIX = new Date().valueOf();
-
         await tx.set(opsTransactionForDateRef, {
           total_credit : totalCredit,
           total_debit : totalDebit,
-          last_updated : nowUNIX,
         }, { merge : true })
       })
     } catch (error) {
