@@ -392,6 +392,12 @@ exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (d
 
   try {
     await targetTransactionDocRef.delete()
+
+    const dateDoc = await dateDocRef.get()
+    const dateDocData = dateDoc.data()
+    if (dateDocData.credit_sum === 0 && dateDocData.debit_sum === 0) {
+      await dateDocRef.delete()
+    }
   } catch (error) {
     console.error(error);
     throw new functions.https.HttpsError(
@@ -562,7 +568,7 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
       // No previous doc means that this document is the earliest
       // So the calculation for avg price and stock is easy
       docData.current_average_price = creditSum / qtyInSum;
-      docData.current_stock = deltaStock;
+      docData.current_stock = Number(deltaStock.toFixed(1));
     } else {
       // If there's a previous doc, we'll need to use their stats to calculate
       // the avg price and stock
@@ -571,7 +577,7 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
         + creditSum) 
         / (prevDoc.current_stock + qtyInSum)
 
-      docData.current_stock = prevDoc.current_stock + deltaStock;
+      docData.current_stock = Number((prevDoc.current_stock + deltaStock).toFixed(1));
     }
 
     const docRef = productTransactionsRef.doc(doc.id)
@@ -584,7 +590,7 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
   // to the parent collection
   await productRef.set({
     stock : prevDoc.current_stock,
-    average_buy_price: prevDoc.current_average_price,
+    average_buy_price: (prevDoc.current_average_price ?? 0),
   }, { merge : true })
 }
 
@@ -703,10 +709,7 @@ exports.onDateTransactionCreated = functions.firestore
         await tx.set(transactionDateDocRef, dateAggrValue, { merge : true })
       })
 
-      // Re-calculate logic
-      // if (transactionType === transactionSubcollectionReference['DEBIT']['PRODUCT'] || transactionType === transactionSubcollectionReference['CREDIT']['PRODUCT']) {
-      //   await recalculateProductAveragePrices(data.expense_id, transactionDate)
-      // }
+
     } catch (error) {
       console.error(error)
     }
@@ -758,7 +761,7 @@ exports.onDateTransactionDeleted = functions.firestore
             break;
         }
 
-        const targetTransaction = await subDocRef.get()
+        const targetTransaction = await tx.get(subDocRef)
         if (!targetTransaction.exists) {
           throw new functions.https.HttpsError(
             "not-found",
@@ -766,7 +769,13 @@ exports.onDateTransactionDeleted = functions.firestore
           );
         }
 
-        await subDocRef.delete()
+        await tx.delete(subDocRef)
+
+        const dateDoc = await tx.get(txnDateDocRef)
+        const dateDocData = dateDoc.data()
+        if (dateDocData.credit_sum === 0 && dateDocData.debit_sum === 0) {
+          await tx.delete(txnDateDocRef)
+        }
       })
 
       // Transaction to update the aggregate value 
@@ -896,6 +905,19 @@ exports.onProductTransactionCreated = functions.firestore
     const { productId, transactionDate, transactionType, transactionId } = context.params;
 
     console.log(`Triggering onProductTransactionCreated due to new doc in
+      /products/${productId}/product_transactions/${transactionDate}/${transactionType}/${transactionId}`)
+
+    await recalculateProductAveragePrices(productId, transactionDate)
+  })
+
+exports.onProductTransactionDeleted = functions.firestore
+  .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
+  .onDelete(async (snap, context) => {
+    const data = snap.data()
+
+    const { productId, transactionDate, transactionType, transactionId } = context.params;
+
+    console.log(`Triggering onProductTransactionDeleted due to removed doc
       /products/${productId}/product_transactions/${transactionDate}/${transactionType}/${transactionId}`)
 
     await recalculateProductAveragePrices(productId, transactionDate)
