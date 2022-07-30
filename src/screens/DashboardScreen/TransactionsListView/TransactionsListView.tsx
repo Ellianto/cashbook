@@ -19,12 +19,13 @@ import { TransactionDetails } from './TransactionDetails';
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 interface TransactionsListViewProps {
   data: TransactionsData[]
+  triggerRefetch: () => void
   getProductsName?: (item : TransactionItem) => string
   getOperationalsName?: (item : TransactionItem) => string
 }
 
 export const TransactionsListView : React.FC<TransactionsListViewProps> = (props) => {
-  const { data = [], getProductsName = () => '', getOperationalsName = () => '' } = props
+  const { data = [], getProductsName = () => '', getOperationalsName = () => '', triggerRefetch } = props
   const ref = useRef(null);
 
   const [selectedTransactionDate, setSelectedTransactionDate] = useState<string|null>(null)
@@ -92,11 +93,15 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
     setShowTransactionDetails(true)
   }, [])
 
-  const hideTransactionDetails = useCallback(() => {
+  const hideTransactionDetails = useCallback((shouldRefetch = false) => {
     setSelectedTransactionDate(null)
     setSelectedTransactionItem(null)
     setShowTransactionDetails(false)
-  }, [])
+
+    if (shouldRefetch) {
+      triggerRefetch()
+    }
+  }, [triggerRefetch])
 
   return (
     <div>
@@ -130,13 +135,13 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
     </Button>
     {selectedTransactionDate && selectedTransactionItem && (
       <TransactionDetails 
-      visible={showTransactionDetails}
-      txDetails={selectedTransactionItem}
-      txDate={selectedTransactionDate}
-      closeDrawer={hideTransactionDetails}
-      getProductsName={getProductsName}
-      getOperationalsName={getOperationalsName}
-    />
+        visible={showTransactionDetails}
+        txDetails={selectedTransactionItem}
+        txDate={selectedTransactionDate}
+        closeDrawer={hideTransactionDetails}
+        getProductsName={getProductsName}
+        getOperationalsName={getOperationalsName}
+      />
     )}
     </div>
   )

@@ -391,7 +391,7 @@ exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (d
   }
 
   try {
-    await targetTxDocRef.delete()
+    await targetTransactionDocRef.delete()
   } catch (error) {
     console.error(error);
     throw new functions.https.HttpsError(
@@ -725,6 +725,20 @@ exports.onDateTransactionDeleted = functions.firestore
     try {
       // Transaction to also remove the document stored in the product/operationals subcollection
       await admin.firestore().runTransaction(async (tx) => {
+        let txnDateDocRef = null;
+        switch (transactionType) {
+          case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
+          case transactionSubcollectionReference['CREDIT']['OPERATIONAL']:
+            txnDateDocRef = rootCollectionReference.operationals.doc(data.expense_id).collection('operational_transactions').doc(transactionDate)
+            break;
+          case transactionSubcollectionReference['DEBIT']['PRODUCT']:
+          case transactionSubcollectionReference['CREDIT']['PRODUCT']:
+            txnDateDocRef = rootCollectionReference.products.doc(data.expense_id).collection('product_transactions').doc(transactionDate)
+            break;
+          default:
+            break;
+        }
+
         let subDocRef = null;
   
         switch (transactionType) {
@@ -752,7 +766,7 @@ exports.onDateTransactionDeleted = functions.firestore
           );
         }
 
-        await targetTransaction.delete()
+        await subDocRef.delete()
       })
 
       // Transaction to update the aggregate value 
@@ -830,6 +844,49 @@ exports.onOperationalTransactionCreated = functions.firestore
     }
   })
 
+exports.onOperationalTransactionDeleted = functions.firestore
+  .document("/operational_expenses/{operationalId}/operational_transactions/{transactionDate}/{transactionType}/{transactionId}")
+  .onDelete(async (snap, context) => {
+    const data = snap.data()
+
+    const { operationalId, transactionDate, transactionType, transactionId } = context.params;
+
+    console.log(`Triggering onOperationalTransactionDeleted due to removed doc
+      /operational_expenses/${operationalId}/operational_transactions/${transactionDate}/${transactionType}/${transactionId}`)
+
+    const opsTransactionForDateRef = rootCollectionReference.operationals.doc(operationalId)
+      .collection('operational_transactions')
+      .doc(transactionDate)
+
+    const creditOpsTxCollRef = opsTransactionForDateRef.collection('credit_operational_transactions')
+    const debitOpsTxCollRef = opsTransactionForDateRef.collection('debit_operational_transactions')
+
+    try {
+      await admin.firestore().runTransaction(async (tx) => {
+        const creditOpsTxDocs = await tx.get(creditOpsTxCollRef)
+
+        let totalCredit = 0;
+        for (let doc of creditOpsTxDocs.docs) {
+          const creditData = doc.data()
+          totalCredit += creditData.amount;
+        }
+
+        const debitOpsTxDocs = await tx.get(debitOpsTxCollRef)
+        let totalDebit = 0;
+        for (let doc of debitOpsTxDocs.docs) {
+          const debitData = doc.data()
+          totalDebit += debitData.amount;
+        }
+
+        await tx.set(opsTransactionForDateRef, {
+          total_credit : totalCredit,
+          total_debit : totalDebit,
+        }, { merge : true })
+      })
+    } catch (error) {
+      console.error(error)
+    }
+  })
 
 exports.onProductTransactionCreated = functions.firestore
   .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
