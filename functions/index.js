@@ -563,6 +563,13 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
     docData.total_debit = debitSum;
     docData.total_qty_out = qtyOutSum;
 
+    const docRef = productTransactionsRef.doc(doc.id)
+    // This doc has no subcollections, remove this
+    if (debitSum === 0 && creditSum === 0) {
+      await docRef.delete()
+      continue
+    }
+
     const deltaStock = qtyInSum - qtyOutSum;
     if (!prevDoc) {
       // No previous doc means that this document is the earliest
@@ -580,8 +587,10 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
       docData.current_stock = Number((prevDoc.current_stock + deltaStock).toFixed(1));
     }
 
-    const docRef = productTransactionsRef.doc(doc.id)
-    await docRef.set(docData, { merge : true })
+    await docRef.set({
+      ...docData,
+      current_average_price: isNaN(docData.current_average_price) ? 0 : docData.current_average_price,
+    }, { merge : true })
 
     prevDoc = docData;
   }
@@ -590,7 +599,7 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
   // to the parent collection
   await productRef.set({
     stock : prevDoc.current_stock,
-    average_buy_price: (prevDoc.current_average_price ?? 0),
+    average_buy_price: isNaN(prevDoc.current_average_price) ? 0 : prevDoc.current_average_price,
   }, { merge : true })
 }
 
@@ -770,12 +779,6 @@ exports.onDateTransactionDeleted = functions.firestore
         }
 
         await tx.delete(subDocRef)
-
-        const dateDoc = await tx.get(txnDateDocRef)
-        const dateDocData = dateDoc.data()
-        if (dateDocData.credit_sum === 0 && dateDocData.debit_sum === 0) {
-          await tx.delete(txnDateDocRef)
-        }
       })
 
       // Transaction to update the aggregate value 
@@ -801,6 +804,15 @@ exports.onDateTransactionDeleted = functions.firestore
           }
 
           await tx.set(transactionDateDocRef, docData, { merge : true })
+        }
+      })
+
+      // Removing the date document in case the subcollection is empty
+      await admin.firestore().runTransaction(async (tx) => {
+        const dateDoc = await tx.get(transactionDateDocRef)
+        const dateDocData = dateDoc.data()
+        if (dateDocData.credit_sum === 0 && dateDocData.debit_sum === 0) {
+          await tx.delete(transactionDateDocRef)
         }
       })
     } catch (error) {
@@ -887,10 +899,14 @@ exports.onOperationalTransactionDeleted = functions.firestore
           totalDebit += debitData.amount;
         }
 
-        await tx.set(opsTransactionForDateRef, {
-          total_credit : totalCredit,
-          total_debit : totalDebit,
-        }, { merge : true })
+        if (totalCredit === 0 && totalDebit === 0) {
+          await tx.delete(opsTransactionForDateRef)
+        } else {
+          await tx.set(opsTransactionForDateRef, {
+            total_credit : totalCredit,
+            total_debit : totalDebit,
+          }, { merge : true })
+        }
       })
     } catch (error) {
       console.error(error)
