@@ -20,19 +20,19 @@ const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 interface TransactionsListViewProps {
   data: TransactionsData[]
   triggerRefetch: () => void
-  getProductsName?: (item : TransactionItem) => string
-  getOperationalsName?: (item : TransactionItem) => string
+  getProductsName?: (item: TransactionItem) => string
+  getOperationalsName?: (item: TransactionItem) => string
 }
 
-export const TransactionsListView : React.FC<TransactionsListViewProps> = (props) => {
+export const TransactionsListView: React.FC<TransactionsListViewProps> = (props) => {
   const { data = [], getProductsName = () => '', getOperationalsName = () => '', triggerRefetch } = props
   const ref = useRef(null);
 
-  const [selectedTransactionDate, setSelectedTransactionDate] = useState<string|null>(null)
-  const [selectedTransactionItem, setSelectedTransactionItem] = useState<TransactionItem|null>(null)
+  const [selectedTransactionDate, setSelectedTransactionDate] = useState<string | null>(null)
+  const [selectedTransactionItem, setSelectedTransactionItem] = useState<TransactionItem | null>(null)
   const [showTransactionDetails, setShowTransactionDetails] = useState<boolean>(false)
 
-  const generateTableColumns = useCallback((tx : TransactionsData) => {
+  const generateTableColumns = useCallback((tx: TransactionsData) => {
     return [
       {
         title: dateFormatting.formatForHumanDisplay(tx.date),
@@ -40,11 +40,11 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
         dataIndex: "transaction_id",
         className: "column-data",
         width: '36%',
-        render: (_ : string, record : TransactionItem) => {
+        render: (_: string, record: TransactionItem) => {
           if (record.category_type === CATEGORY_TYPES.PRODUCT) {
             return `${getProductsName(record)} (${record.qty?.toFixed(2) ?? 0} kg)`
           } else {
-            return getOperationalsName(record); 
+            return getOperationalsName(record);
           }
         },
       },
@@ -55,7 +55,7 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
         key: "debit_amount",
         width: "32%",
         className: "debit column-data",
-        render: (_ : string, record: TransactionItem) => {
+        render: (_: string, record: TransactionItem) => {
           if (record.transaction_type === TRANSACTION_TYPES.DEBIT) {
             return "Rp. " + numberFormatting.formatIDRCurrencyNumber(record.amount)
           }
@@ -70,7 +70,7 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
         key: "credit_amount",
         width: "32%",
         className: "credit column-data",
-        render: (_ : string, record: TransactionItem) => {
+        render: (_: string, record: TransactionItem) => {
           if (record.transaction_type === TRANSACTION_TYPES.CREDIT) {
             return "Rp. " + numberFormatting.formatIDRCurrencyNumber(record.amount)
           }
@@ -87,7 +87,7 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
     removeAfterPrint: true,
   });
 
-  const handleRowClicked = useCallback((record : TransactionItem, txDate : string) => {
+  const handleRowClicked = useCallback((record: TransactionItem, txDate: string) => {
     setSelectedTransactionDate(txDate)
     setSelectedTransactionItem(record)
     setShowTransactionDetails(true)
@@ -99,7 +99,9 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
     setShowTransactionDetails(false)
 
     if (shouldRefetch) {
-      triggerRefetch()
+      setTimeout(() => {
+        triggerRefetch()
+      }, 800)
     }
   }, [triggerRefetch])
 
@@ -107,42 +109,42 @@ export const TransactionsListView : React.FC<TransactionsListViewProps> = (props
     <div>
       <div ref={ref}>
 
-    <List 
-      size="large"
-      locale={{ emptyText : <Empty description="Tidak ada transaksi pada kurun waktu tersebut!" />}}
-      dataSource={data}
-      rowKey="date"
-      split={true}
-      renderItem={(item : TransactionsData) => (
-        <Table 
-          columns={generateTableColumns(item)}
-          dataSource={item.transactions}
-          rowKey={(data : TransactionItem) => data.transaction_id}
-          size="middle"
-          className="tx-table"
-          sticky={true}
-          pagination={false}
-          onRow={(record, idx) => ({
-            onClick: (_) => handleRowClicked(record, item.date)
-          })}
+        <List
+          size="large"
+          locale={{ emptyText: <Empty description="Tidak ada transaksi pada kurun waktu tersebut!" /> }}
+          dataSource={data}
+          rowKey="date"
+          split={true}
+          renderItem={(item: TransactionsData) => (
+            <Table
+              columns={generateTableColumns(item)}
+              dataSource={item.transactions}
+              rowKey={(data: TransactionItem) => data.transaction_id}
+              size="middle"
+              className="tx-table"
+              sticky={true}
+              pagination={false}
+              onRow={(record, idx) => ({
+                onClick: (_) => handleRowClicked(record, item.date)
+              })}
+            />
+          )}
         />
-      )}
-    />
       </div>
 
-    <Button block type="primary" onClick={handlePrintTransactionList}>
-      Print
-    </Button>
-    {selectedTransactionDate && selectedTransactionItem && (
-      <TransactionDetails 
-        visible={showTransactionDetails}
-        txDetails={selectedTransactionItem}
-        txDate={selectedTransactionDate}
-        closeDrawer={hideTransactionDetails}
-        getProductsName={getProductsName}
-        getOperationalsName={getOperationalsName}
-      />
-    )}
+      {data.length > 0 && <Button block type="primary" onClick={handlePrintTransactionList}>
+        Print
+      </Button>}
+      {selectedTransactionDate && selectedTransactionItem && (
+        <TransactionDetails
+          visible={showTransactionDetails}
+          txDetails={selectedTransactionItem}
+          txDate={selectedTransactionDate}
+          closeDrawer={hideTransactionDetails}
+          getProductsName={getProductsName}
+          getOperationalsName={getOperationalsName}
+        />
+      )}
     </div>
   )
 }
