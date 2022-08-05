@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-import { List, Card, Button, Segmented, Empty, Spin } from "antd";
-import { EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
+import { List, Card, Button, Segmented, Empty, Spin, Space, message } from "antd";
+import { DeleteOutlined, EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
 
 import { ScreenTemplate } from "../../components";
 import { BottomSheetCategoryForm } from "./BottomSheetCategoryForm";
@@ -27,6 +27,8 @@ interface EditCategoryButtonProps {
   onClick: (item: Category) => void;
 }
 
+type DeleteCategoryButtonProps = EditCategoryButtonProps;
+
 const { CATEGORY_TYPES } = constants;
 
 const categoryOptions = [
@@ -45,13 +47,25 @@ const EditCategoryButton: React.FC<EditCategoryButtonProps> = (props) => {
 
   return (
     <Button
-      className="edit-category-button"
       type="text"
       icon={<EditOutlined />}
       onClick={() => onClick(item)}
     />
   );
 };
+
+const DeleteCategoryButton: React.FC<DeleteCategoryButtonProps> = (props) => {
+  const { item, onClick } = props;
+
+  return (
+    <Button
+      type="link"
+      danger
+      icon={<DeleteOutlined />}
+      onClick={() => onClick(item)}
+    />
+  );
+}
 
 // TODO: Implement pagination if needed
 export const CategoryScreen = () => {
@@ -108,6 +122,10 @@ export const CategoryScreen = () => {
     setItemToEdit(category);
     setBottomDrawerVisible(true);
   }, []);
+
+  const handleDeleteCategoryClicked = useCallback((category: Category) => {
+    message.info("WIP")
+  }, [])
 
   const handleAddClicked = useCallback(() => {
     setItemToEdit(null);
@@ -168,6 +186,11 @@ export const CategoryScreen = () => {
                         onClick={handleEditCategoryClicked}
                         key={`edit-product-${item.id}`}
                       />,
+                      <DeleteCategoryButton
+                        item={item}
+                        onClick={handleDeleteCategoryClicked}
+                        key={`delete-product-${item.id}`}
+                      />
                     ]}
                   >
                     <p className="product-stock">Stock : {item.stock ?? 0}</p>
@@ -204,11 +227,19 @@ export const CategoryScreen = () => {
                     title={item.name}
                     bodyStyle={{ padding: 0 }}
                     extra={
-                      <EditCategoryButton
-                        item={item}
-                        onClick={handleEditCategoryClicked}
-                        key={`edit-operational-${item.id}`}
-                      />
+                      <Space>
+                        <EditCategoryButton
+                          item={item}
+                          onClick={handleEditCategoryClicked}
+                          key={`edit-operational-${item.id}`}
+                        />
+                        <DeleteCategoryButton
+                          item={item}
+                          onClick={handleDeleteCategoryClicked}
+                          key={`delete-product-${item.id}`}
+                        />
+                      </Space>
+
                     }
                   />
                 </List.Item>
