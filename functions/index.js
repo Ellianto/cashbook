@@ -261,7 +261,7 @@ exports.editOperationals = generateLightRuntimeCloudFunctions().onCall(
   }
 );
 
-exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
+exports.addTransaction = generateHeavyRuntimeCloudFunctions().onCall(
   async (data, context) => {
     // Check for auth
     if (!context.auth && AUTH_REQUIRED) {
@@ -303,7 +303,6 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
     try {
       // Transaction that will save data to the "transactions" collection
       await admin.firestore().runTransaction(async (tx) => {
-
         let newEntry = {
           expense_id: data.expense_id,
           amount: data.amount,
@@ -332,9 +331,87 @@ exports.addTransactions = generateHeavyRuntimeCloudFunctions().onCall(
 
 // TODO: Implement DELETE for products and ops categories
 
-// TODO: Implement Edit for Transactions
+// NOTE: For simplicity's sake, for now only support editing amount and/or qty
+exports.editTransaction = generateLightRuntimeCloudFunctions().onCall(async (data, context) => {
+  if (!context.auth && AUTH_REQUIRED) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Mohon login kembali!"
+    );
+  }
 
-// TODO: Implement Delete for Transactions
+  // Check for missing data 
+  if (!data.transaction_id) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan ID transaksi terisi dengan benar!",
+    );
+  }
+
+  if (!data.transaction_date) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan tanggal transaksi terisi dengan benar!"
+    );
+  }
+
+  if (!data.transaction_type) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan jenis transaksi terisi dengan benar!"
+    );
+  }
+
+  if (!data.expense_type) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan kategori terisi dengan benar!"
+    );
+  }
+
+  const transactionsCollectionReference =
+    rootCollectionReference.transactions;
+
+  const dateDocRef = transactionsCollectionReference.doc(data.transaction_date)
+
+  const txSubcollRef = dateDocRef.collection(transactionSubcollectionReference[data.transaction_type][
+    data.expense_type
+  ])
+  const targetTransactionDocRef = txSubcollRef.doc(data.transaction_id)
+  if (!targetTransaction.exists) {
+    throw new functions.https.HttpsError(
+      "not-found",
+      "Transaksi tidak ditemukan!",
+    );
+  }
+
+  try {
+      // Transaction that will save data to the "transactions" collection
+      await admin.firestore().runTransaction(async (tx) => {
+        let updatedEntry = {
+          amount: data.amount,
+        };
+
+        // If it's a product, we handle it differently
+        if (data.expense_type === "PRODUCT" && data.expense_id) {
+          updatedEntry = {
+            ...updatedEntry,
+            qty: data.qty,
+          };
+        }
+
+        // And finally write
+        tx.set(targetTransactionDocRef, updatedEntry, { merge: true });
+      });
+  } catch (error) {
+    console.error(error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Error mencatat transaksi! Coba lagi dalam beberapa saat!"
+    );
+  }
+})
+
 exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (data, context) => {
   if (!context.auth && AUTH_REQUIRED) {
     throw new functions.https.HttpsError(
@@ -724,6 +801,109 @@ exports.onDateTransactionCreated = functions.firestore
     }
   })
 
+exports.onDateTransactionUpdated = functions.firestore
+  .document("/transactions/{transactionDate}/{transactionType}/{transactionId}")
+  .onUpdate(async (snap, context) => {
+    const data = snap.data()
+
+    const { transactionDate, transactionType, transactionId } = context.params;
+
+    const transactionDateDocRef = rootCollectionReference.transactions.doc(transactionDate);
+
+    console.log(`Triggering onDateTransactionUpdated due to updated doc in /transactions/${transactionDate}/${transactionType}/${transactionId}`)
+
+    try {
+      // Transaction to update the data in products/operationals sub-collection
+      await admin.firestore().runTransaction(async (tx) => {
+        let txnDateDocRef = null
+        let subcollectionRef = null;
+        let dataToWrite = { amount : data.amount ?? 0 };
+  
+        switch (transactionType) {
+          case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
+          case transactionSubcollectionReference['CREDIT']['OPERATIONAL']:
+            txnDateDocRef = rootCollectionReference.operationals.doc(data.expense_id).collection('operational_transactions').doc(transactionDate)
+            break;
+          case transactionSubcollectionReference['DEBIT']['PRODUCT']:
+          case transactionSubcollectionReference['CREDIT']['PRODUCT']:
+            txnDateDocRef = rootCollectionReference.products.doc(data.expense_id).collection('product_transactions').doc(transactionDate)
+            break;
+          default:
+            break;
+        }
+  
+        if (!txnDateDocRef) {
+          return Promise.reject(`Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`)
+        }
+
+        const txnDateDoc = await tx.get(txnDateDocRef)
+        if (!txnDateDoc.exists) {
+          console.error("Document does not exist in :", txnDateDocRef.path)
+          return
+        }
+
+        switch (transactionType) {
+          case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
+            subcollectionRef = txnDateDocRef.collection('debit_operational_transactions').doc(transactionId)
+            break;
+          case transactionSubcollectionReference['CREDIT']['OPERATIONAL']:
+            subcollectionRef = txnDateDocRef.collection('credit_operational_transactions').doc(transactionId)
+            break;
+          case transactionSubcollectionReference['DEBIT']['PRODUCT']:
+            subcollectionRef = txnDateDocRef.collection('debit_product_transactions').doc(transactionId)
+            dataToWrite = {
+              ...dataToWrite,
+              qty : data.qty ?? 0,
+            }
+            break;
+          case transactionSubcollectionReference['CREDIT']['PRODUCT']:
+            subcollectionRef = txnDateDocRef.collection('credit_product_transactions').doc(transactionId)
+            dataToWrite = {
+              ...dataToWrite,
+              qty : data.qty ?? 0,
+            }
+            break;
+          default:
+            break;
+        }
+        
+        await tx.set(subcollectionRef, dataToWrite, { merge : true })
+      })
+
+      // Transaction to update Aggregate value under the /transactions/:transactionDate document
+      await admin.firestore().runTransaction(async (tx) => {
+        const transactionDateDoc = await tx.get(transactionDateDocRef)
+
+        let dateAggrValue = null;
+        if (transactionDateDoc.exists) {
+          dateAggrValue = transactionDateDoc.data();
+        } else {
+          dateAggrValue = {
+            credit_sum: 0,
+            debit_sum: 0,
+          };
+        }
+
+        switch (transactionType) {
+          case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
+          case transactionSubcollectionReference['DEBIT']['PRODUCT']:
+            dateAggrValue.debit_sum += data.amount;
+            break;
+          case transactionSubcollectionReference['CREDIT']['OPERATIONAL']:
+          case transactionSubcollectionReference['CREDIT']['PRODUCT']:
+            dateAggrValue.credit_sum += data.amount;
+            break;
+          default:
+            break;
+        }
+
+        await tx.set(transactionDateDocRef, dateAggrValue, { merge : true })
+      })
+    } catch (error) {
+      console.error(error)
+    }
+  })
+
 exports.onDateTransactionDeleted = functions.firestore
   .document("/transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onDelete(async (snap, context) => {
@@ -865,6 +1045,50 @@ exports.onOperationalTransactionCreated = functions.firestore
     }
   })
 
+exports.onOperationalTransactionUpdated = functions.firestore
+  .document("/operational_expenses/{operationalId}/operational_transactions/{transactionDate}/{transactionType}/{transactionId}")
+  .onCreate(async (snap, context) => {
+    const data = snap.data()
+
+    const { operationalId, transactionDate, transactionType, transactionId } = context.params;
+
+    console.log(`Triggering onOperationalTransactionUpdated due to updated doc in
+      /operational_expenses/${operationalId}/operational_transactions/${transactionDate}/${transactionType}/${transactionId}`)
+
+    const opsTransactionForDateRef = rootCollectionReference.operationals.doc(operationalId)
+      .collection('operational_transactions')
+      .doc(transactionDate)
+
+    const creditOpsTxCollRef = opsTransactionForDateRef.collection('credit_operational_transactions')
+    const debitOpsTxCollRef = opsTransactionForDateRef.collection('debit_operational_transactions')
+
+    try {
+      await admin.firestore().runTransaction(async (tx) => {
+        const creditOpsTxDocs = await tx.get(creditOpsTxCollRef)
+
+        let totalCredit = 0;
+        for (let doc of creditOpsTxDocs.docs) {
+          const creditData = doc.data()
+          totalCredit += creditData.amount;
+        }
+
+        const debitOpsTxDocs = await tx.get(debitOpsTxCollRef)
+        let totalDebit = 0;
+        for (let doc of debitOpsTxDocs.docs) {
+          const debitData = doc.data()
+          totalDebit += debitData.amount;
+        }
+
+        await tx.set(opsTransactionForDateRef, {
+          total_credit : totalCredit,
+          total_debit : totalDebit,
+        }, { merge : true })
+      })
+    } catch (error) {
+      console.error(error)
+    }
+  })
+
 exports.onOperationalTransactionDeleted = functions.firestore
   .document("/operational_expenses/{operationalId}/operational_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onDelete(async (snap, context) => {
@@ -921,6 +1145,19 @@ exports.onProductTransactionCreated = functions.firestore
     const { productId, transactionDate, transactionType, transactionId } = context.params;
 
     console.log(`Triggering onProductTransactionCreated due to new doc in
+      /products/${productId}/product_transactions/${transactionDate}/${transactionType}/${transactionId}`)
+
+    await recalculateProductAveragePrices(productId, transactionDate)
+  })
+
+exports.onProductTransactionUpdated = functions.firestore
+  .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
+  .onUpdate(async (snap, context) => {
+    const data = snap.data()
+
+    const { productId, transactionDate, transactionType, transactionId } = context.params;
+
+    console.log(`Triggering onProductTransactionUpdated due to updated doc in
       /products/${productId}/product_transactions/${transactionDate}/${transactionType}/${transactionId}`)
 
     await recalculateProductAveragePrices(productId, transactionDate)

@@ -36,7 +36,7 @@ import { formRules, constants } from "../../constants";
 import {
   getOperationalsMethod,
   getProductsMethod,
-  addTransactionsMethod,
+  addTransactionMethod,
 } from "../../firebase";
 import { dateFormatting, handleFirebaseError, numberFormatting } from "../../utils";
 
@@ -170,7 +170,7 @@ export const TransactionFormScreen = () => {
           };
         }
 
-        await addTransactionsMethod(payload);
+        await addTransactionMethod(payload);
         message.success("Transaksi berhasil ditambahkan!");
         resetSpecificFields();
       } catch (error) {
