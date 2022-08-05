@@ -378,6 +378,7 @@ exports.editTransaction = generateLightRuntimeCloudFunctions().onCall(async (dat
     data.expense_type
   ])
   const targetTransactionDocRef = txSubcollRef.doc(data.transaction_id)
+  const targetTransaction = await targetTransactionDocRef.get()
   if (!targetTransaction.exists) {
     throw new functions.https.HttpsError(
       "not-found",
@@ -393,7 +394,7 @@ exports.editTransaction = generateLightRuntimeCloudFunctions().onCall(async (dat
         };
 
         // If it's a product, we handle it differently
-        if (data.expense_type === "PRODUCT" && data.expense_id) {
+        if (data.expense_type === "PRODUCT") {
           updatedEntry = {
             ...updatedEntry,
             qty: data.qty,
@@ -803,8 +804,9 @@ exports.onDateTransactionCreated = functions.firestore
 
 exports.onDateTransactionUpdated = functions.firestore
   .document("/transactions/{transactionDate}/{transactionType}/{transactionId}")
-  .onUpdate(async (snap, context) => {
-    const data = snap.data()
+  .onUpdate(async (change, context) => {
+    const oldData = change.before.data()
+    const newData = change.after.data()
 
     const { transactionDate, transactionType, transactionId } = context.params;
 
@@ -817,16 +819,16 @@ exports.onDateTransactionUpdated = functions.firestore
       await admin.firestore().runTransaction(async (tx) => {
         let txnDateDocRef = null
         let subcollectionRef = null;
-        let dataToWrite = { amount : data.amount ?? 0 };
+        let dataToWrite = { amount : newData.amount ?? 0 };
   
         switch (transactionType) {
           case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
           case transactionSubcollectionReference['CREDIT']['OPERATIONAL']:
-            txnDateDocRef = rootCollectionReference.operationals.doc(data.expense_id).collection('operational_transactions').doc(transactionDate)
+            txnDateDocRef = rootCollectionReference.operationals.doc(newData.expense_id).collection('operational_transactions').doc(transactionDate)
             break;
           case transactionSubcollectionReference['DEBIT']['PRODUCT']:
           case transactionSubcollectionReference['CREDIT']['PRODUCT']:
-            txnDateDocRef = rootCollectionReference.products.doc(data.expense_id).collection('product_transactions').doc(transactionDate)
+            txnDateDocRef = rootCollectionReference.products.doc(newData.expense_id).collection('product_transactions').doc(transactionDate)
             break;
           default:
             break;
@@ -838,8 +840,7 @@ exports.onDateTransactionUpdated = functions.firestore
 
         const txnDateDoc = await tx.get(txnDateDocRef)
         if (!txnDateDoc.exists) {
-          console.error("Document does not exist in :", txnDateDocRef.path)
-          return
+          return Promise.reject(`Document does not exist in ${txnDateDocRef.path}`)
         }
 
         switch (transactionType) {
@@ -853,14 +854,14 @@ exports.onDateTransactionUpdated = functions.firestore
             subcollectionRef = txnDateDocRef.collection('debit_product_transactions').doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty : data.qty ?? 0,
+              qty : newData.qty ?? 0,
             }
             break;
           case transactionSubcollectionReference['CREDIT']['PRODUCT']:
             subcollectionRef = txnDateDocRef.collection('credit_product_transactions').doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty : data.qty ?? 0,
+              qty : newData.qty ?? 0,
             }
             break;
           default:
@@ -887,11 +888,19 @@ exports.onDateTransactionUpdated = functions.firestore
         switch (transactionType) {
           case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
           case transactionSubcollectionReference['DEBIT']['PRODUCT']:
-            dateAggrValue.debit_sum += data.amount;
+            if (oldData.amount > newData.amount) {
+              dateAggrValue.debit_sum -= oldData.amount - newData.amount;
+            } else {
+              dateAggrValue.debit_sum += newData.amount - oldData.amount;
+            }
             break;
           case transactionSubcollectionReference['CREDIT']['OPERATIONAL']:
           case transactionSubcollectionReference['CREDIT']['PRODUCT']:
-            dateAggrValue.credit_sum += data.amount;
+            if (oldData.amount > newData.amount) {
+              dateAggrValue.credit_sum -= oldData.amount - newData.amount;
+            } else {
+              dateAggrValue.credit_sum += newData.amount - oldData.amount;
+            }
             break;
           default:
             break;
@@ -1047,9 +1056,7 @@ exports.onOperationalTransactionCreated = functions.firestore
 
 exports.onOperationalTransactionUpdated = functions.firestore
   .document("/operational_expenses/{operationalId}/operational_transactions/{transactionDate}/{transactionType}/{transactionId}")
-  .onCreate(async (snap, context) => {
-    const data = snap.data()
-
+  .onCreate(async (change, context) => {
     const { operationalId, transactionDate, transactionType, transactionId } = context.params;
 
     console.log(`Triggering onOperationalTransactionUpdated due to updated doc in
@@ -1137,11 +1144,11 @@ exports.onOperationalTransactionDeleted = functions.firestore
     }
   })
 
+// NOTE: Three functions below can be merged into one using "onWrite" to save quota
+// since all they do is just recalculate
 exports.onProductTransactionCreated = functions.firestore
   .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onCreate(async (snap, context) => {
-    const data = snap.data()
-
     const { productId, transactionDate, transactionType, transactionId } = context.params;
 
     console.log(`Triggering onProductTransactionCreated due to new doc in
@@ -1153,8 +1160,6 @@ exports.onProductTransactionCreated = functions.firestore
 exports.onProductTransactionUpdated = functions.firestore
   .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onUpdate(async (snap, context) => {
-    const data = snap.data()
-
     const { productId, transactionDate, transactionType, transactionId } = context.params;
 
     console.log(`Triggering onProductTransactionUpdated due to updated doc in
@@ -1166,8 +1171,6 @@ exports.onProductTransactionUpdated = functions.firestore
 exports.onProductTransactionDeleted = functions.firestore
   .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onDelete(async (snap, context) => {
-    const data = snap.data()
-
     const { productId, transactionDate, transactionType, transactionId } = context.params;
 
     console.log(`Triggering onProductTransactionDeleted due to removed doc
