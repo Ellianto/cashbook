@@ -348,7 +348,7 @@ exports.deleteOperationals = generateLightRuntimeCloudFunctions().onCall(async (
     console.error(err);
     throw new functions.https.HttpsError(
       "internal",
-      "Error menghapus operasional! Coba lagi dalam beberapa saat!"
+      "Error menghapus kategori operasional! Coba lagi dalam beberapa saat!"
     );
   }
 })
@@ -498,79 +498,7 @@ exports.editTransaction = generateLightRuntimeCloudFunctions().onCall(async (dat
     console.error(error);
     throw new functions.https.HttpsError(
       "internal",
-      "Error mencatat transaksi! Coba lagi dalam beberapa saat!"
-    );
-  }
-})
-
-exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (data, context) => {
-  if (!context.auth && AUTH_REQUIRED) {
-    throw new functions.https.HttpsError(
-      "unauthenticated",
-      "Mohon login kembali!"
-    );
-  }
-
-  // Check for missing data 
-  if (!data.transaction_id) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Pastikan ID transaksi terisi dengan benar!",
-    );
-  }
-
-  if (!data.transaction_date) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Pastikan tanggal transaksi terisi dengan benar!"
-    );
-  }
-
-  if (!data.transaction_type) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Pastikan jenis transaksi terisi dengan benar!"
-    );
-  }
-
-  if (!data.expense_type) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Pastikan kategori terisi dengan benar!"
-    );
-  }
-
-  const transactionsCollectionReference =
-    rootCollectionReference.transactions;
-
-  const dateDocRef = transactionsCollectionReference.doc(data.transaction_date)
-
-  const txSubcollRef = dateDocRef.collection(transactionSubcollectionReference[data.transaction_type][
-    data.expense_type
-  ])
-  const targetTransactionDocRef = txSubcollRef.doc(data.transaction_id)
-
-  const targetTransaction = await targetTransactionDocRef.get()
-  if (!targetTransaction.exists) {
-    throw new functions.https.HttpsError(
-      "not-found",
-      "Transaksi tidak ditemukan!",
-    );
-  }
-
-  try {
-    await targetTransactionDocRef.delete()
-
-    const dateDoc = await dateDocRef.get()
-    const dateDocData = dateDoc.data()
-    if (dateDocData.credit_sum === 0 && dateDocData.debit_sum === 0) {
-      await dateDocRef.delete()
-    }
-  } catch (error) {
-    console.error(error);
-    throw new functions.https.HttpsError(
-      "internal",
-      "Error menghapus transaksi! Coba lagi dalam beberapa saat!"
+      "Error mengubah transaksi! Coba lagi dalam beberapa saat!"
     );
   }
 })
@@ -674,6 +602,128 @@ exports.getTransactions = generateHeavyRuntimeCloudFunctions().onCall(async (dat
   }
 })
 
+exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (data, context) => {
+  if (!context.auth && AUTH_REQUIRED) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Mohon login kembali!"
+    );
+  }
+
+  // Check for missing data 
+  if (!data.transaction_id) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan ID transaksi terisi dengan benar!",
+    );
+  }
+
+  if (!data.transaction_date) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan tanggal transaksi terisi dengan benar!"
+    );
+  }
+
+  if (!data.transaction_type) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan jenis transaksi terisi dengan benar!"
+    );
+  }
+
+  if (!data.expense_type) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan kategori terisi dengan benar!"
+    );
+  }
+
+  const transactionsCollectionReference =
+    rootCollectionReference.transactions;
+
+  const dateDocRef = transactionsCollectionReference.doc(data.transaction_date)
+
+  const txSubcollRef = dateDocRef.collection(transactionSubcollectionReference[data.transaction_type][
+    data.expense_type
+  ])
+  const targetTransactionDocRef = txSubcollRef.doc(data.transaction_id)
+
+  const targetTransaction = await targetTransactionDocRef.get()
+  if (!targetTransaction.exists) {
+    throw new functions.https.HttpsError(
+      "not-found",
+      "Transaksi tidak ditemukan!",
+    );
+  }
+
+  try {
+    await targetTransactionDocRef.delete()
+
+    const dateDoc = await dateDocRef.get()
+    const dateDocData = dateDoc.data()
+    if (dateDocData.credit_sum === 0 && dateDocData.debit_sum === 0) {
+      await dateDocRef.delete()
+    }
+  } catch (error) {
+    console.error(error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Error menghapus transaksi! Coba lagi dalam beberapa saat!"
+    );
+  }
+})
+/*
+  Commenting this out due to complexity
+exports.bulkDeleteTransactionByDate = generateHeavyRuntimeCloudFunctions().onCall(async (data, context) => {
+  if (!context.auth && AUTH_REQUIRED) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Mohon login kembali!"
+    );
+  }
+
+  // Check for missing data 
+  if (!data.start_date) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan tanggal mulai terisi dengan benar!",
+    );
+  }
+
+  if (!data.end_date) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Pastikan tanggal selesai terisi dengan benar!",
+    );
+  }
+
+  const { start_date : startDate, end_date : endDate } = data;
+
+  const dateTransactionsRef = rootCollectionReference.transactions;
+
+  try {
+    const transactionsQueryResult = await dateTransactionsRef
+      .where(admin.firestore.FieldPath.documentId(), '>=', startDate)
+      .where(admin.firestore.FieldPath.documentId(), '<=', endDate)
+      .get()
+
+    if (!transactionsQueryResult.empty) {
+      const targetDocRefs = transactionsQueryResult.docs.map((doc) => doc.ref)
+      console.log(`Starting recursive delete on ${targetDocRefs.length} date documents`)
+      await Promise.allSettled(targetDocRefs.map((docRef) => triggerRecursiveDelete(docRef.path)))
+    }
+  } catch (error) {
+    console.error(error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Error menghapus transaksi! Coba lagi dalam beberapa saat!"
+    );
+  }
+})
+*/
+
+// TODO: Might want to store a snapshot of previous doc data to be used as reference
 const recalculateProductAveragePrices = async (productId, startTransactionDate) => {
   console.log(`Recalculating product average prices for product ID ${productId} starting from ${startTransactionDate}`)
 
@@ -695,15 +745,9 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
 
   const docsToChange = await afterTxDateDocs.get()
   for (let doc of docsToChange.docs) {
-    const docData = {
-      total_credit: 0,
-      total_qty_in: 0,
-      total_debit: 0,
-      total_qty_out: 0,
-      current_average_price: 0,
-      current_stock: 0,
-      last_updated: 0,
-    }
+    const docRef = productTransactionsRef.doc(doc.id)
+    const initialDoc = await docRef.get()
+    const docData = initialDoc.data()
 
     // CREDIT TRANSACTION means we're purchasing products, so QTY is IN
     let creditSum = 0;
@@ -731,9 +775,8 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
     docData.total_debit = debitSum;
     docData.total_qty_out = qtyOutSum;
 
-    const docRef = productTransactionsRef.doc(doc.id)
     // This doc has no subcollections, remove this
-    if (debitSum === 0 && creditSum === 0) {
+    if (creditTxns.empty && debitTxns.empty) {
       await docRef.delete()
       continue
     }
@@ -742,7 +785,9 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
     if (!prevDoc) {
       // No previous doc means that this document is the earliest
       // So the calculation for avg price and stock is easy
-      docData.current_average_price = creditSum / qtyInSum;
+      if (qtyInSum > 0) {
+        docData.current_average_price = creditSum / qtyInSum;
+      }
       docData.current_stock = Number(deltaStock.toFixed(1));
     } else {
       // If there's a previous doc, we'll need to use their stats to calculate
@@ -758,6 +803,7 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
     await docRef.set({
       ...docData,
       current_average_price: isNaN(docData.current_average_price) ? 0 : docData.current_average_price,
+      current_stock: isNan(docData.current_stock) ? 0 : docData.current_stock,
     }, { merge: true })
 
     prevDoc = docData;
@@ -765,10 +811,12 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
 
   // On the last entry, we save the stock + avg price
   // to the parent collection
-  await productRef.set({
-    stock: prevDoc.current_stock,
-    average_buy_price: isNaN(prevDoc.current_average_price) ? 0 : prevDoc.current_average_price,
-  }, { merge: true })
+  if (prevDoc) {
+    await productRef.set({
+      stock: prevDoc.current_stock,
+      average_buy_price: isNaN(prevDoc.current_average_price) ? 0 : prevDoc.current_average_price,
+    }, { merge: true })
+  }
 }
 
 const triggerRecursiveDelete = async (targetPath) => {
@@ -908,6 +956,7 @@ exports.onDateTransactionCreated = functions.firestore
 
     } catch (error) {
       console.error(error)
+      throw error
     }
   })
 
@@ -1019,6 +1068,7 @@ exports.onDateTransactionUpdated = functions.firestore
       })
     } catch (error) {
       console.error(error)
+      throw error
     }
   })
 
@@ -1158,6 +1208,7 @@ exports.onOperationalTransactionCreated = functions.firestore
       })
     } catch (error) {
       console.error(error)
+      throw error
     }
   })
 
@@ -1200,6 +1251,7 @@ exports.onOperationalTransactionUpdated = functions.firestore
       })
     } catch (error) {
       console.error(error)
+      throw error
     }
   })
 
@@ -1280,6 +1332,7 @@ exports.onOperationalTransactionDeleted = functions.firestore
       }
     } catch (error) {
       console.error(error)
+      throw error
     }
   })
 

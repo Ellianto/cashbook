@@ -36,3 +36,7 @@
 .ant-radio-button-wrapper:not(:first-child)::before {
   background: transparent !important;
 }
+
+.date-picker-container {
+  margin: 12px 6px;
+}

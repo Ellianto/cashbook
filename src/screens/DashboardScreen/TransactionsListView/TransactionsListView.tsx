@@ -2,10 +2,14 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 
 import {
+  Row, Col,
   List,
   Table,
   Empty,
   Button,
+  Modal,
+  Typography,
+  message,
 } from 'antd';
 import { ColumnType } from "antd/lib/table";
 
@@ -15,8 +19,11 @@ import { constants } from "../../../constants";
 import "./TransactionsList.css"
 import { dateFormatting, numberFormatting } from '../../../utils';
 import { TransactionDetails } from './TransactionDetails';
+import { ExclamationCircleTwoTone } from '@ant-design/icons';
+import { bulkDeleteTransactionMethod } from '../../../firebase';
 
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
+const { Paragraph } = Typography;
 interface TransactionsListViewProps {
   data: TransactionsData[]
   startDate: string
@@ -109,6 +116,45 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = (props)
     }
   }, [triggerRefetch])
 
+  const bulkRemoveTransactions = useCallback(() => {
+    if (!startDate) {
+      message.warning("Pastikan tanggal mulai sudah terpilih!")
+      return
+    }
+
+    if (!endDate) {
+      message.warning("Pastikan tanggal selesai sudah terpilih!")
+      return
+    }
+
+    Modal.confirm({
+      title: "Yakin ingin merekap dan menghapus transaksi?",
+      centered: true,
+      closable: true,
+      maskClosable: true,
+      icon: <ExclamationCircleTwoTone twoToneColor="#eb2f96" />,
+      okText: "Ya, hapus",
+      okButtonProps: {
+        ghost: false,
+        danger: true,
+      },
+      content: (
+        <Paragraph>
+          Melakukan rekap akan menghapus semua transaksi pada jangka waktu yang telah ditentukan. 
+          Data yang hilang tidak bisa dikembalikan lagi!
+        </Paragraph>
+      ),
+      onOk: async () => {
+        await bulkDeleteTransactionMethod({
+          start_date: startDate,
+          end_date: endDate,
+        })
+
+        await triggerRefetch()
+      }
+    })
+  }, [startDate, endDate, triggerRefetch])
+
   return (
     <div>
       <div ref={ref}>
@@ -136,9 +182,20 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = (props)
         />
       </div>
 
-      {data.length > 0 && <Button block type="primary" onClick={handlePrintTransactionList}>
-        Print
-      </Button>}
+      {data.length > 0 && (
+        <Row gutter={[8, 12]}>
+          <Col xs={24}>
+            <Button block type="primary" onClick={handlePrintTransactionList}>
+              Simpan PDF
+            </Button>
+          </Col>
+          <Col xs={24}>
+            <Button block danger type="primary" onClick={bulkRemoveTransactions}>
+              Rekap dan hapus
+            </Button>
+          </Col>
+        </Row>
+      )}
       {selectedTransactionDate && selectedTransactionItem && (
         <TransactionDetails
           visible={showTransactionDetails}

@@ -237,6 +237,14 @@ export const DashboardScreen = () => {
     <ScreenTemplate title="Dashboard">
       <Spin spinning={isLoading}>
         <div className="screen-container">
+        <Segmented
+            options={dashboardViewOptions}
+            onChange={(value) => setDashboardView(`${value}`)}
+            value={dashboardView}
+            block
+            size="large"
+          />
+
           <Text>Pilih interval</Text>
           <Radio.Group 
             optionType="button"
@@ -246,7 +254,7 @@ export const DashboardScreen = () => {
             onChange={handleDateIntervalChanged}
           />
           {dateInterval === DATE_INTERVALS.CUSTOM && (
-            <Row align="middle" justify="space-around">
+            <Row align="middle" justify="space-around" className="date-picker-container">
               <Col xs={10}>
                 <DatePicker 
                   mode="date"
@@ -272,14 +280,6 @@ export const DashboardScreen = () => {
               </Col>
             </Row>
           )}
-
-          <Segmented
-            options={dashboardViewOptions}
-            onChange={(value) => setDashboardView(`${value}`)}
-            value={dashboardView}
-            block
-            size="large"
-          />
 
           {/* 
             TODO: Technically FE can also calculate summary, from the transactionsList,

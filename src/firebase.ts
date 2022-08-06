@@ -26,6 +26,7 @@ export const editTransactionMethod = httpsCallable(firebaseFunctions, 'editTrans
 export const deleteProductMethod = httpsCallable(firebaseFunctions, 'deleteProduct')
 export const deleteOperationalMethod = httpsCallable(firebaseFunctions, 'deleteOperationals')
 export const deleteTransactionMethod = httpsCallable(firebaseFunctions, 'deleteTransaction')
+export const bulkDeleteTransactionMethod = httpsCallable(firebaseFunctions, 'bulkDeleteTransactionByDate')
 
 // export const deleteProductMethod = httpsCallable(firebaseFunctions, 'deleteProduct')
 // export const deleteOperationalMethod = httpsCallable(firebaseFunctions, 'deleteOperational')
