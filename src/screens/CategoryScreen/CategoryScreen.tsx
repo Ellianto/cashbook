@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 
-import { List, Card, Button, Segmented, Empty, Spin, Space, message } from "antd";
-import { DeleteOutlined, EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
+import { List, Card, Button, Segmented, Empty, Spin, Space, Modal, Typography } from "antd";
+import { DeleteOutlined, EditOutlined, ExclamationCircleTwoTone, PlusCircleOutlined } from "@ant-design/icons";
 
 import { ScreenTemplate } from "../../components";
 import { BottomSheetCategoryForm } from "./BottomSheetCategoryForm";
@@ -16,12 +16,11 @@ import {
 } from "../../constants/responses";
 import { constants } from "../../constants";
 
-import { getOperationalsMethod, getProductsMethod } from "../../firebase";
+import { deleteOperationalMethod, deleteProductMethod, getOperationalsMethod, getProductsMethod } from "../../firebase";
 import { handleFirebaseError } from "../../utils";
 import { CategoryTypeValues } from "../../constants/interfaces/CategoryTypes";
 
 type Category = ProductInventory | OperationalCategory;
-
 interface EditCategoryButtonProps {
   item: Category;
   onClick: (item: Category) => void;
@@ -30,6 +29,7 @@ interface EditCategoryButtonProps {
 type DeleteCategoryButtonProps = EditCategoryButtonProps;
 
 const { CATEGORY_TYPES } = constants;
+const { Paragraph } = Typography;
 
 const categoryOptions = [
   {
@@ -123,9 +123,59 @@ export const CategoryScreen = () => {
     setBottomDrawerVisible(true);
   }, []);
 
-  const handleDeleteCategoryClicked = useCallback((category: Category) => {
-    message.info("WIP")
-  }, [])
+  const handleDeleteProductClicked = useCallback((product: Category) => {
+    Modal.confirm({
+      title: "Yakin ingin menghapus produk?",
+      centered: true,
+      closable: true,
+      maskClosable: true,
+      icon: <ExclamationCircleTwoTone twoToneColor="#eb2f96" />,
+      okText: "Ya, hapus",
+      okButtonProps: {
+        ghost: false,
+        danger: true,
+      },
+      content: (
+        <Paragraph>
+          Menghapus produk ini juga akan menghapus semua transaksi yang menggunakan produk ini (jika ada).
+        </Paragraph>
+      ),
+      onOk: async () => {
+        await deleteProductMethod({
+          id: product.id,
+        })
+
+        await fetchProducts()
+      }
+    })
+  }, [fetchProducts])
+
+  const handleDeleteOperationalsClicked = useCallback((ops: Category) => {
+    Modal.confirm({
+      title: "Yakin ingin menghapus kategori operasional?",
+      centered: true,
+      closable: true,
+      maskClosable: true,
+      icon: <ExclamationCircleTwoTone twoToneColor="#eb2f96" />,
+      okText: "Ya, hapus",
+      okButtonProps: {
+        ghost: false,
+        danger: true,
+      },
+      content: (
+        <Paragraph>
+          Menghapus kategori operasional ini juga akan menghapus semua transaksi yang menggunakan kategori operasional ini (jika ada).
+        </Paragraph>
+      ),
+      onOk: async () => {
+        await deleteOperationalMethod({
+          id: ops.id,
+        })
+
+        await fetchOperationals()
+      }
+    })
+  }, [fetchOperationals])
 
   const handleAddClicked = useCallback(() => {
     setItemToEdit(null);
@@ -188,7 +238,7 @@ export const CategoryScreen = () => {
                       />,
                       <DeleteCategoryButton
                         item={item}
-                        onClick={handleDeleteCategoryClicked}
+                        onClick={handleDeleteProductClicked}
                         key={`delete-product-${item.id}`}
                       />
                     ]}
@@ -235,8 +285,8 @@ export const CategoryScreen = () => {
                         />
                         <DeleteCategoryButton
                           item={item}
-                          onClick={handleDeleteCategoryClicked}
-                          key={`delete-product-${item.id}`}
+                          onClick={handleDeleteOperationalsClicked}
+                          key={`delete-operational-${item.id}`}
                         />
                       </Space>
 

@@ -19,13 +19,15 @@ import { TransactionDetails } from './TransactionDetails';
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 interface TransactionsListViewProps {
   data: TransactionsData[]
+  startDate: string
+  endDate: string
   triggerRefetch: () => void
   getProductsName?: (item: TransactionItem) => string
   getOperationalsName?: (item: TransactionItem) => string
 }
 
 export const TransactionsListView: React.FC<TransactionsListViewProps> = (props) => {
-  const { data = [], getProductsName = () => '', getOperationalsName = () => '', triggerRefetch } = props
+  const { startDate = "", endDate = "", data = [], getProductsName = () => '', getOperationalsName = () => '', triggerRefetch } = props
   const ref = useRef(null);
 
   const [selectedTransactionDate, setSelectedTransactionDate] = useState<string | null>(null)
@@ -85,6 +87,8 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = (props)
     onPrintError: console.error,
     content: () => ref.current,
     removeAfterPrint: true,
+    documentTitle: `Cashbook_Rekap_${startDate ?? ""}-${endDate ?? ""}`,
+    // FAQs : https://github.com/gregnb/react-to-print#helpful-style-tips
   });
 
   const handleRowClicked = useCallback((record: TransactionItem, txDate: string) => {

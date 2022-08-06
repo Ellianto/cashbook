@@ -293,6 +293,8 @@ export const DashboardScreen = () => {
               getOperationalsName={getOperationalsName}
               getProductsName={getProductsName}
               triggerRefetch={handleSubmitDateRange}
+              startDate={startDate ? dateFormatting.formatForStorage(startDate) : ""}
+              endDate={endDate ? dateFormatting.formatForStorage(endDate) : ""}
             />
           ) : dashboardView === DASHBOARD_VIEWS.SUMMARY ?  (
             <SummaryView 
