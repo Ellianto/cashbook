@@ -292,6 +292,7 @@ export const DashboardScreen = () => {
               data={transactionsList}
               getOperationalsName={getOperationalsName}
               getProductsName={getProductsName}
+              triggerRefetch={handleSubmitDateRange}
             />
           ) : dashboardView === DASHBOARD_VIEWS.SUMMARY ?  (
             <SummaryView 
