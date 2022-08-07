@@ -12,7 +12,7 @@ admin.initializeApp({
 });
 
 // Feature flag to quickly enable/disable auth checks
-const AUTH_REQUIRED = false;
+const AUTH_REQUIRED = true;
 
 const lightRuntime = {
   timeoutSeconds: 120,
@@ -598,7 +598,11 @@ exports.getTransactions = generateHeavyRuntimeCloudFunctions().onCall(async (dat
       transactions: transactionsResponse,
     }
   } catch (error) {
-
+    console.error(error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Error menampilkan daftar transaksi! Coba lagi dalam beberapa saat!"
+    );
   }
 })
 
@@ -721,7 +725,6 @@ exports.bulkDeleteTransactionByDate = generateHeavyRuntimeCloudFunctions().onCal
   }
 })
 
-// TODO: Might want to store a snapshot of previous doc data to be used as reference
 const recalculateProductAveragePrices = async (productId, startTransactionDate) => {
   console.log(`Recalculating product average prices for product ID ${productId} starting from ${startTransactionDate}`)
 
@@ -878,7 +881,7 @@ exports.onDateTransactionCreated = functions.firestore
       await admin.firestore().runTransaction(async (tx) => {
         let txnDateDocRef = null
         let subcollectionRef = null;
-        let dataToWrite = { amount: data.amount ?? 0 };
+        let dataToWrite = { amount: data.amount ? data.amount : 0 };
 
         switch (transactionType) {
           case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
@@ -894,7 +897,7 @@ exports.onDateTransactionCreated = functions.firestore
         }
 
         if (!txnDateDocRef) {
-          return Promise.reject(`Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`)
+          return `Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`
         }
 
         const txnDateDoc = await tx.get(txnDateDocRef)
@@ -929,14 +932,14 @@ exports.onDateTransactionCreated = functions.firestore
             subcollectionRef = txnDateDocRef.collection(productTxSubcollectionReference.DEBIT).doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty: data.qty ?? 0,
+              qty: data.qty ? data.qty : 0,
             }
             break;
           case transactionSubcollectionReference['CREDIT']['PRODUCT']:
             subcollectionRef = txnDateDocRef.collection(productTxSubcollectionReference.CREDIT).doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty: data.qty ?? 0,
+              qty: data.qty ? data.qty : 0,
             }
             break;
           default:
@@ -1000,7 +1003,7 @@ exports.onDateTransactionUpdated = functions.firestore
       await admin.firestore().runTransaction(async (tx) => {
         let txnDateDocRef = null
         let subcollectionRef = null;
-        let dataToWrite = { amount: newData.amount ?? 0 };
+        let dataToWrite = { amount: newData.amount ? newData.amount : 0 };
 
         switch (transactionType) {
           case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
@@ -1016,12 +1019,12 @@ exports.onDateTransactionUpdated = functions.firestore
         }
 
         if (!txnDateDocRef) {
-          return Promise.reject(`Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`)
+          return `Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`
         }
 
         const txnDateDoc = await tx.get(txnDateDocRef)
         if (!txnDateDoc.exists) {
-          return Promise.reject(`Document does not exist in ${txnDateDocRef.path}`)
+          return `Document does not exist in ${txnDateDocRef.path}`
         }
 
         switch (transactionType) {
@@ -1035,14 +1038,14 @@ exports.onDateTransactionUpdated = functions.firestore
             subcollectionRef = txnDateDocRef.collection(productTxSubcollectionReference.DEBIT).doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty: newData.qty ?? 0,
+              qty: newData.qty ? newData.qty : 0,
             }
             break;
           case transactionSubcollectionReference['CREDIT']['PRODUCT']:
             subcollectionRef = txnDateDocRef.collection(productTxSubcollectionReference.CREDIT).doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty: newData.qty ?? 0,
+              qty: newData.qty ? newData.qty : 0,
             }
             break;
           default:
