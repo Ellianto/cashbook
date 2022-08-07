@@ -54,8 +54,8 @@ const transactionSubcollectionReference = {
 };
 
 const opsTxSubcollectionReference = {
-  DEBIT : 'debit_operational_transactions',
-  CREDIT : 'credit_operational_transactions',
+  DEBIT: 'debit_operational_transactions',
+  CREDIT: 'credit_operational_transactions',
 }
 
 const productTxSubcollectionReference = {
@@ -673,8 +673,7 @@ exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (d
     );
   }
 })
-/*
-  Commenting this out due to complexity
+
 exports.bulkDeleteTransactionByDate = generateHeavyRuntimeCloudFunctions().onCall(async (data, context) => {
   if (!context.auth && AUTH_REQUIRED) {
     throw new functions.https.HttpsError(
@@ -721,7 +720,6 @@ exports.bulkDeleteTransactionByDate = generateHeavyRuntimeCloudFunctions().onCal
     );
   }
 })
-*/
 
 // TODO: Might want to store a snapshot of previous doc data to be used as reference
 const recalculateProductAveragePrices = async (productId, startTransactionDate) => {
@@ -783,27 +781,52 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
 
     const deltaStock = qtyInSum - qtyOutSum;
     if (!prevDoc) {
-      // No previous doc means that this document is the earliest
-      // So the calculation for avg price and stock is easy
-      if (qtyInSum > 0) {
-        docData.current_average_price = creditSum / qtyInSum;
+      if (docData.prev_data) {
+        // If there's a previous data, we'll still use 
+        // that as a reference to calculate the avg price and stock
+        // To make sure the data for this date is still up to date
+        // even though the previous dates are deleted
+        if ((docData.prev_data.stock + qtyInSum) > 0) {
+          docData.current_average_price = (
+            (docData.prev_data.stock * docData.prev_data.average_price)
+            + creditSum)
+            / (docData.prev_data.stock + qtyInSum)
+        }
+
+        docData.current_stock = Number((docData.prev_data.stock + deltaStock).toFixed(1));
+      } else {
+        // No previous doc means that this document is the earliest
+        // No previous data means we can do the simple calculation
+        if (qtyInSum > 0) {
+          docData.current_average_price = creditSum / qtyInSum;
+        }
+        docData.current_stock = Number(deltaStock.toFixed(1));
+        docData.prev_data = {
+          stock : 0,
+          average_price : 0,
+        }
       }
-      docData.current_stock = Number(deltaStock.toFixed(1));
     } else {
       // If there's a previous doc, we'll need to use their stats to calculate
       // the avg price and stock
-      docData.current_average_price = (
-        (prevDoc.current_stock * prevDoc.current_average_price)
-        + creditSum)
-        / (prevDoc.current_stock + qtyInSum)
+      if ((prevDoc.current_stock + qtyInSum) > 0) {
+        docData.current_average_price = (
+          (prevDoc.current_stock * prevDoc.current_average_price)
+          + creditSum)
+          / (prevDoc.current_stock + qtyInSum)
+      }
 
       docData.current_stock = Number((prevDoc.current_stock + deltaStock).toFixed(1));
+      docData.prev_data = {
+        stock: prevDoc.current_stock,
+        average_price: prevDoc.current_average_price,
+      };
     }
 
     await docRef.set({
       ...docData,
       current_average_price: isNaN(docData.current_average_price) ? 0 : docData.current_average_price,
-      current_stock: isNan(docData.current_stock) ? 0 : docData.current_stock,
+      current_stock: isNaN(docData.current_stock) ? 0 : docData.current_stock,
     }, { merge: true })
 
     prevDoc = docData;
@@ -1275,24 +1298,24 @@ exports.onOperationalTransactionDeleted = functions.firestore
         // The doc still exists, re-calculate the aggregate for transactions
         const creditOpsTxCollRef = opsTransactionForDateRef.collection(opsTxSubcollectionReference.CREDIT)
         const debitOpsTxCollRef = opsTransactionForDateRef.collection(opsTxSubcollectionReference.DEBIT)
-  
+
         // Re-calculate the aggregate
         await admin.firestore().runTransaction(async (tx) => {
           const creditOpsTxDocs = await tx.get(creditOpsTxCollRef)
-  
+
           let totalCredit = 0;
           for (let doc of creditOpsTxDocs.docs) {
             const creditData = doc.data()
             totalCredit += creditData.amount;
           }
-  
+
           const debitOpsTxDocs = await tx.get(debitOpsTxCollRef)
           let totalDebit = 0;
           for (let doc of debitOpsTxDocs.docs) {
             const debitData = doc.data()
             totalDebit += debitData.amount;
           }
-  
+
           if (totalCredit === 0 && totalDebit === 0) {
             await tx.delete(opsTransactionForDateRef)
           } else {
