@@ -21,6 +21,7 @@ export const routes = {
   TRANSACTIONS: "/transactions",
   DASHBOARD: "/dashboard",
   CATEGORY: "/category",
+  LOGIN: "/login",
 };
 
 export const navbarItems: CustomMenuItem[] = [

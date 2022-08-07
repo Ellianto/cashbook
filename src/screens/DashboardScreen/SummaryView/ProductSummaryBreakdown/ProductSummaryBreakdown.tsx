@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 
 import { Drawer, List, Progress, Button } from 'antd'
+import { InfoCircleOutlined } from '@ant-design/icons';
 
 import { 
   TransactionTypeValues,
@@ -9,11 +10,11 @@ import {
   TransactionsData,
 } from "../../../../constants/interfaces";
 import { constants } from '../../../../constants';
+import { numberFormatting } from '../../../../utils';
+
+import { ProductDetailsBreakdown } from '../ProductDetailsBreakdown';
 
 import "./ProductSummaryBreakdown.css"
-import { InfoCircleOutlined } from '@ant-design/icons';
-import { ProductDetailsBreakdown } from '../ProductDetailsBreakdown';
-import { numberFormatting } from '../../../../utils';
 
 const { TRANSACTION_TYPES } = constants
 interface ProductSummaryBreakdownProps {

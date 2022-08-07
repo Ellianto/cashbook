@@ -21,6 +21,7 @@ import { constants } from "../../../../constants";
 import "./SummaryView.css"
 
 import { ProductSummaryBreakdown } from '../ProductSummaryBreakdown';
+import { OpsSummaryBreakdown } from '../OpsSummaryBreakdown';
 
 const { CATEGORY_TYPES, TRANSACTION_TYPES } = constants;
 
@@ -163,6 +164,12 @@ export const SummaryView : React.FC<SummaryViewProps> = (props) => {
       closeDrawer={handleDrawerClosed}
       data={summaryData.productsSummary}
       transactionsData={data}
+    />
+    <OpsSummaryBreakdown 
+      visible={isOpsSummaryVisible}
+      summaryType={selectedSummaryType}
+      closeDrawer={handleDrawerClosed}
+      data={summaryData.opsSummary}
     />
     <Row gutter={[8, 8]} className="summary-container">
       <Col xs={12}>
