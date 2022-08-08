@@ -33,7 +33,7 @@ const App: React.FC = () => {
       if (user) navigate(routes.HOME)
       else navigate(routes.LOGIN)
     }
-  }, [loading, user, navigate])
+  }, [loading, user])
 
   return md ? (
     <Paragraph>
@@ -41,7 +41,7 @@ const App: React.FC = () => {
     </Paragraph>
   ) : (
     <Routes>
-      <Route path="/" element={<AppShell />}>
+      <Route element={<AppShell />}>
         {/* TODO: Check if Index and Path can be used at the same time */}
         <Route index element={<HomeScreen />} />
         <Route path={routes.HOME} element={<HomeScreen />} />

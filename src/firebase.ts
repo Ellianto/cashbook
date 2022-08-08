@@ -12,7 +12,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 setPersistence(firebaseAuth, browserLocalPersistence)
 
-export const firebaseFunctions = getFunctions(firebaseApp, 'asia-southeast2')
+export const firebaseFunctions = getFunctions(firebaseApp, 'us-central1')
 // 5001 is default for functions emulator
 if (process.env.NODE_ENV !== 'production') {
   connectFunctionsEmulator(firebaseFunctions, 'localhost', 5001)
