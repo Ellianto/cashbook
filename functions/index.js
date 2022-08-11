@@ -17,6 +17,8 @@ const AUTH_REQUIRED = true;
 // and as of now Firebase Hosting is only available here
 // If we choose other regions, the callable functions will face
 // CORS Issues
+// TODO: See if we can deploy + host using surge.sh
+// That way we're not bound to putting the function in us-central1
 const functionsRegion = "us-central1"
 
 const lightRuntime = {
@@ -707,7 +709,7 @@ exports.bulkDeleteTransactionByDate = generateHeavyRuntimeCloudFunctions().onCal
     );
   }
 
-  const { start_date : startDate, end_date : endDate } = data;
+  const { start_date: startDate, end_date: endDate } = data;
 
   const dateTransactionsRef = rootCollectionReference.transactions;
 
@@ -811,8 +813,8 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
         }
         docData.current_stock = Number(deltaStock.toFixed(1));
         docData.prev_data = {
-          stock : 0,
-          average_price : 0,
+          stock: 0,
+          average_price: 0,
         }
       }
     } else {
@@ -834,7 +836,9 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
 
     await docRef.set({
       ...docData,
-      current_average_price: isNaN(docData.current_average_price) ? 0 : docData.current_average_price,
+      current_average_price: isNaN(docData.current_average_price) || 
+        (isNaN(docData.current_stock) || docData.current_stock === 0) 
+        ? 0 : docData.current_average_price,
       current_stock: isNaN(docData.current_stock) ? 0 : docData.current_stock,
     }, { merge: true })
 
