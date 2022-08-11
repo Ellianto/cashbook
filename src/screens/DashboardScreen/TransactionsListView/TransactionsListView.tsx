@@ -110,9 +110,7 @@ export const TransactionsListView: React.FC<TransactionsListViewProps> = (props)
     setShowTransactionDetails(false)
 
     if (shouldRefetch) {
-      setTimeout(() => {
-        triggerRefetch()
-      }, 800)
+      triggerRefetch()
     }
   }, [triggerRefetch])
 

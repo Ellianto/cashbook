@@ -17,16 +17,18 @@ const AUTH_REQUIRED = true;
 // and as of now Firebase Hosting is only available here
 // If we choose other regions, the callable functions will face
 // CORS Issues
+// TODO: Explore adding middleware to try to solve CORS issue
+// https://firebase.google.com/docs/hosting/functions#add_middleware
 const functionsRegion = "us-central1"
 
 const lightRuntime = {
   timeoutSeconds: 120,
-  memory: "256MB",
+  memory: "512MB",
 };
 
 const heavyRuntime = {
   timeoutSeconds: 300,
-  memory: "512MB",
+  memory: "1GB",
 };
 
 const generateLightRuntimeCloudFunctions = () => {
@@ -653,6 +655,7 @@ exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (d
     rootCollectionReference.transactions;
 
   const dateDocRef = transactionsCollectionReference.doc(data.transaction_date)
+  dateDocRef.data
 
   const txSubcollRef = dateDocRef.collection(transactionSubcollectionReference[data.transaction_type][
     data.expense_type
@@ -667,14 +670,41 @@ exports.deleteTransaction = generateLightRuntimeCloudFunctions().onCall(async (d
     );
   }
 
-  try {
-    await targetTransactionDocRef.delete()
+  const txData = targetTransaction.data()
 
-    const dateDoc = await dateDocRef.get()
-    const dateDocData = dateDoc.data()
-    if (dateDocData.credit_sum === 0 && dateDocData.debit_sum === 0) {
-      await dateDocRef.delete()
-    }
+  // Try to get the next transaction date in product tx collections if this is a product doc
+  let afterTxDateDocsQuery = null;
+  if (data.expense_type === "PRODUCT") {
+    afterTxDateDocsQuery = rootCollectionReference.products
+      .doc(txData.expense_id)
+      .collection('product_transactions')
+      .where(admin.firestore.FieldPath.documentId(), ">", data.transaction_date)
+      .orderBy(admin.firestore.FieldPath.documentId(), "asc")
+      .limit(1)
+  }
+
+  try {
+    await admin.firestore().runTransaction(async (tx) => {
+      if (afterTxDateDocsQuery) {
+        const afterTxDateDocs = await tx.get(afterTxDateDocsQuery)
+        if (!afterTxDateDocs.empty) {
+          // If there's a date document found in product tx collection
+          // after this date, let's reset the prev_data since we purposefully
+          // deleted the transaction here. The only case (as of now)
+          // where we want to keep the prev_data is when doing recap
+          // (which is done via the bulkDeleteTransactionByDate below)
+          const afterTxDoc = afterTxDateDocs.docs[0]
+          const afterTxData = afterTxDoc.data()
+          if (afterTxData.prev_data) {
+            delete afterTxData.prev_data
+          }
+          await tx.set(afterTxDoc.ref, afterTxData)
+        }
+      }
+
+      // await targetTransactionDocRef.delete()
+      await tx.delete(targetTransactionDocRef)
+    })
   } catch (error) {
     console.error(error);
     throw new functions.https.HttpsError(
@@ -707,7 +737,7 @@ exports.bulkDeleteTransactionByDate = generateHeavyRuntimeCloudFunctions().onCal
     );
   }
 
-  const { start_date : startDate, end_date : endDate } = data;
+  const { start_date: startDate, end_date: endDate } = data;
 
   const dateTransactionsRef = rootCollectionReference.transactions;
 
@@ -811,8 +841,8 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
         }
         docData.current_stock = Number(deltaStock.toFixed(1));
         docData.prev_data = {
-          stock : 0,
-          average_price : 0,
+          stock: 0,
+          average_price: 0,
         }
       }
     } else {
@@ -834,7 +864,9 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
 
     await docRef.set({
       ...docData,
-      current_average_price: isNaN(docData.current_average_price) ? 0 : docData.current_average_price,
+      current_average_price: isNaN(docData.current_average_price) ||
+        (isNaN(docData.current_stock) || docData.current_stock === 0)
+        ? 0 : docData.current_average_price,
       current_stock: isNaN(docData.current_stock) ? 0 : docData.current_stock,
     }, { merge: true })
 
@@ -845,8 +877,10 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
   // to the parent collection
   if (prevDoc) {
     await productRef.set({
-      stock: prevDoc.current_stock,
-      average_buy_price: isNaN(prevDoc.current_average_price) ? 0 : prevDoc.current_average_price,
+      stock: isNaN(prevDoc.current_stock) ? 0 : prevDoc.current_stock,
+      average_buy_price: isNaN(prevDoc.current_average_price) || 
+        (isNaN(prevDoc.current_stock) || prevDoc.current_stock === 0) 
+        ? 0 : prevDoc.current_average_price,
     }, { merge: true })
   }
 }

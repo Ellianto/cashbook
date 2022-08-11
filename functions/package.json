@@ -1,7 +1,7 @@
 {
   "name": "cashbook-functions",
   "description": "Cloud Functions for Cashbook project",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "scripts": {
     "lint": "eslint .",
     "serve": "firebase emulators:start --only functions",
