@@ -1,18 +1,22 @@
 import { initializeApp } from '@firebase/app';
-import { getAuth, setPersistence, browserSessionPersistence } from '@firebase/auth';
-import { getFunctions, httpsCallable, connectFunctionsEmulator  } from '@firebase/functions';   
+import { getAuth, setPersistence, browserLocalPersistence, connectAuthEmulator } from '@firebase/auth';
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from '@firebase/functions';   
 
 import { config } from './constants'
 
 // Initialize Firebase
 export const firebaseApp = initializeApp(config.firebase);
 export const firebaseAuth = getAuth(firebaseApp)
-// connectAuthEmulator(firebaseAuth, "http://localhost:9099");
-setPersistence(firebaseAuth, browserSessionPersistence)
+if (process.env.NODE_ENV !== 'production') {
+  connectAuthEmulator(firebaseAuth, "http://localhost:9099", { disableWarnings : true });
+}
+setPersistence(firebaseAuth, browserLocalPersistence)
 
-export const firebaseFunctions = getFunctions(firebaseApp, 'asia-southeast2')
+export const firebaseFunctions = getFunctions(firebaseApp, 'us-central1')
 // 5001 is default for functions emulator
-connectFunctionsEmulator(firebaseFunctions, 'localhost', 5001)
+if (process.env.NODE_ENV !== 'production') {
+  connectFunctionsEmulator(firebaseFunctions, 'localhost', 5001)
+}
 
 export const getProductsMethod  = httpsCallable(firebaseFunctions, 'getProducts')
 export const getOperationalsMethod  = httpsCallable(firebaseFunctions, 'getOperationals')
@@ -27,6 +31,3 @@ export const deleteProductMethod = httpsCallable(firebaseFunctions, 'deleteProdu
 export const deleteOperationalMethod = httpsCallable(firebaseFunctions, 'deleteOperationals')
 export const deleteTransactionMethod = httpsCallable(firebaseFunctions, 'deleteTransaction')
 export const bulkDeleteTransactionMethod = httpsCallable(firebaseFunctions, 'bulkDeleteTransactionByDate')
-
-// export const deleteProductMethod = httpsCallable(firebaseFunctions, 'deleteProduct')
-// export const deleteOperationalMethod = httpsCallable(firebaseFunctions, 'deleteOperational')

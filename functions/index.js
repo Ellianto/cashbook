@@ -12,7 +12,12 @@ admin.initializeApp({
 });
 
 // Feature flag to quickly enable/disable auth checks
-const AUTH_REQUIRED = false;
+const AUTH_REQUIRED = true;
+// Doing this since we're hosting using Firebase Hosting
+// and as of now Firebase Hosting is only available here
+// If we choose other regions, the callable functions will face
+// CORS Issues
+const functionsRegion = "us-central1"
 
 const lightRuntime = {
   timeoutSeconds: 120,
@@ -25,11 +30,12 @@ const heavyRuntime = {
 };
 
 const generateLightRuntimeCloudFunctions = () => {
-  return functions.region("asia-southeast2").runWith(lightRuntime).https;
+  return functions.region(functionsRegion).runWith(lightRuntime).https;
 };
 
+
 const generateHeavyRuntimeCloudFunctions = () => {
-  return functions.region("asia-southeast2").runWith(heavyRuntime).https;
+  return functions.region(functionsRegion).runWith(heavyRuntime).https;
 };
 
 const rootCollectionReference = {
@@ -598,7 +604,11 @@ exports.getTransactions = generateHeavyRuntimeCloudFunctions().onCall(async (dat
       transactions: transactionsResponse,
     }
   } catch (error) {
-
+    console.error(error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "Error menampilkan daftar transaksi! Coba lagi dalam beberapa saat!"
+    );
   }
 })
 
@@ -721,7 +731,6 @@ exports.bulkDeleteTransactionByDate = generateHeavyRuntimeCloudFunctions().onCal
   }
 })
 
-// TODO: Might want to store a snapshot of previous doc data to be used as reference
 const recalculateProductAveragePrices = async (productId, startTransactionDate) => {
   console.log(`Recalculating product average prices for product ID ${productId} starting from ${startTransactionDate}`)
 
@@ -862,7 +871,7 @@ const triggerRecursiveDelete = async (targetPath) => {
 }
 
 // Firestore triggered cloud functions
-exports.onDateTransactionCreated = functions.firestore
+exports.onDateTransactionCreated = functions.region(functionsRegion).firestore
   .document("/transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onCreate(async (snap, context) => {
     const data = snap.data()
@@ -878,7 +887,7 @@ exports.onDateTransactionCreated = functions.firestore
       await admin.firestore().runTransaction(async (tx) => {
         let txnDateDocRef = null
         let subcollectionRef = null;
-        let dataToWrite = { amount: data.amount ?? 0 };
+        let dataToWrite = { amount: data.amount ? data.amount : 0 };
 
         switch (transactionType) {
           case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
@@ -894,7 +903,7 @@ exports.onDateTransactionCreated = functions.firestore
         }
 
         if (!txnDateDocRef) {
-          return Promise.reject(`Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`)
+          return `Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`
         }
 
         const txnDateDoc = await tx.get(txnDateDocRef)
@@ -929,14 +938,14 @@ exports.onDateTransactionCreated = functions.firestore
             subcollectionRef = txnDateDocRef.collection(productTxSubcollectionReference.DEBIT).doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty: data.qty ?? 0,
+              qty: data.qty ? data.qty : 0,
             }
             break;
           case transactionSubcollectionReference['CREDIT']['PRODUCT']:
             subcollectionRef = txnDateDocRef.collection(productTxSubcollectionReference.CREDIT).doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty: data.qty ?? 0,
+              qty: data.qty ? data.qty : 0,
             }
             break;
           default:
@@ -983,7 +992,7 @@ exports.onDateTransactionCreated = functions.firestore
     }
   })
 
-exports.onDateTransactionUpdated = functions.firestore
+exports.onDateTransactionUpdated = functions.region(functionsRegion).firestore
   .document("/transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onUpdate(async (change, context) => {
     const oldData = change.before.data()
@@ -1000,7 +1009,7 @@ exports.onDateTransactionUpdated = functions.firestore
       await admin.firestore().runTransaction(async (tx) => {
         let txnDateDocRef = null
         let subcollectionRef = null;
-        let dataToWrite = { amount: newData.amount ?? 0 };
+        let dataToWrite = { amount: newData.amount ? newData.amount : 0 };
 
         switch (transactionType) {
           case transactionSubcollectionReference['DEBIT']['OPERATIONAL']:
@@ -1016,12 +1025,12 @@ exports.onDateTransactionUpdated = functions.firestore
         }
 
         if (!txnDateDocRef) {
-          return Promise.reject(`Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`)
+          return `Invalid subcollection reference! Date : ${transactionDate}; Type : ${transactionType}; ID : ${transactionId}`
         }
 
         const txnDateDoc = await tx.get(txnDateDocRef)
         if (!txnDateDoc.exists) {
-          return Promise.reject(`Document does not exist in ${txnDateDocRef.path}`)
+          return `Document does not exist in ${txnDateDocRef.path}`
         }
 
         switch (transactionType) {
@@ -1035,14 +1044,14 @@ exports.onDateTransactionUpdated = functions.firestore
             subcollectionRef = txnDateDocRef.collection(productTxSubcollectionReference.DEBIT).doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty: newData.qty ?? 0,
+              qty: newData.qty ? newData.qty : 0,
             }
             break;
           case transactionSubcollectionReference['CREDIT']['PRODUCT']:
             subcollectionRef = txnDateDocRef.collection(productTxSubcollectionReference.CREDIT).doc(transactionId)
             dataToWrite = {
               ...dataToWrite,
-              qty: newData.qty ?? 0,
+              qty: newData.qty ? newData.qty : 0,
             }
             break;
           default:
@@ -1095,7 +1104,7 @@ exports.onDateTransactionUpdated = functions.firestore
     }
   })
 
-exports.onDateTransactionDeleted = functions.firestore
+exports.onDateTransactionDeleted = functions.region(functionsRegion).firestore
   .document("/transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onDelete(async (snap, context) => {
     const data = snap.data()
@@ -1190,7 +1199,7 @@ exports.onDateTransactionDeleted = functions.firestore
     }
   })
 
-exports.onOperationalTransactionCreated = functions.firestore
+exports.onOperationalTransactionCreated = functions.region(functionsRegion).firestore
   .document("/operational_expenses/{operationalId}/operational_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onCreate(async (snap, context) => {
     const data = snap.data()
@@ -1235,7 +1244,7 @@ exports.onOperationalTransactionCreated = functions.firestore
     }
   })
 
-exports.onOperationalTransactionUpdated = functions.firestore
+exports.onOperationalTransactionUpdated = functions.region(functionsRegion).firestore
   .document("/operational_expenses/{operationalId}/operational_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onCreate(async (change, context) => {
     const { operationalId, transactionDate, transactionType, transactionId } = context.params;
@@ -1278,7 +1287,7 @@ exports.onOperationalTransactionUpdated = functions.firestore
     }
   })
 
-exports.onOperationalTransactionDeleted = functions.firestore
+exports.onOperationalTransactionDeleted = functions.region(functionsRegion).firestore
   .document("/operational_expenses/{operationalId}/operational_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onDelete(async (snap, context) => {
     const data = snap.data()
@@ -1361,7 +1370,7 @@ exports.onOperationalTransactionDeleted = functions.firestore
 
 // NOTE: Three functions below can be merged into one using "onWrite" to save quota
 // since all they do is just recalculate
-exports.onProductTransactionCreated = functions.firestore
+exports.onProductTransactionCreated = functions.region(functionsRegion).firestore
   .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onCreate(async (snap, context) => {
     const { productId, transactionDate, transactionType, transactionId } = context.params;
@@ -1372,7 +1381,7 @@ exports.onProductTransactionCreated = functions.firestore
     await recalculateProductAveragePrices(productId, transactionDate)
   })
 
-exports.onProductTransactionUpdated = functions.firestore
+exports.onProductTransactionUpdated = functions.region(functionsRegion).firestore
   .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onUpdate(async (snap, context) => {
     const { productId, transactionDate, transactionType, transactionId } = context.params;
@@ -1383,7 +1392,7 @@ exports.onProductTransactionUpdated = functions.firestore
     await recalculateProductAveragePrices(productId, transactionDate)
   })
 
-exports.onProductTransactionDeleted = functions.firestore
+exports.onProductTransactionDeleted = functions.region(functionsRegion).firestore
   .document("/products/{productId}/product_transactions/{transactionDate}/{transactionType}/{transactionId}")
   .onDelete(async (snap, context) => {
     const { productId, transactionDate, transactionType, transactionId } = context.params;

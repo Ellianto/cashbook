@@ -1,0 +1,8 @@
+.percentage-container .ant-progress-outer {
+  margin-right: calc(-4em - 8px) !important;
+  padding-right: calc(4em + 8px) !important;
+}
+
+.percentage-container .ant-progress-text{
+  width: 4em !important;
+}

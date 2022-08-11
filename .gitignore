@@ -157,3 +157,5 @@ secrets
 secrets/*
 src/internal_secrets
 src/internal_secrets/*
+.firebase
+.firebase/*

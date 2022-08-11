@@ -1,6 +1,6 @@
 {
-  "name": "cashbook",
-  "version": "0.7.0",
+  "name": "Cashbook",
+  "version": "0.8.0",
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^4.7.0",
@@ -19,6 +19,7 @@
     "numeral": "^2.0.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-firebase-hooks": "^5.0.3",
     "react-router": "^6.3.0",
     "react-router-dom": "^6.3.0",
     "react-scripts": "5.0.1",
@@ -41,8 +42,10 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:prod": "NODE_ENV=production react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "firebase deploy --only hosting"
   },
   "eslintConfig": {
     "extends": [
