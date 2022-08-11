@@ -55,12 +55,15 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = (props) => 
 
       await deleteTransactionMethod(payload)
       message.success("Transaksi berhasil dihapus!")
-      closeDrawer(true);
+      setTimeout(() => {
+        closeDrawer(true);
+        setIsLoading(false);
+      }, 1200)
     } catch (error) {
       handleFirebaseError(error);
+      setIsLoading(false);
     }
 
-    setIsLoading(false);
   }, [txDate, txDetails, closeDrawer])
 
   const handleEditTransaction = useCallback(async () => {
@@ -88,12 +91,16 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = (props) => 
 
       await editTransactionMethod(payload)
       message.success("Transaksi berhasil diubah!")
-      closeDrawer(true);
+      setTimeout(() => {
+        closeDrawer(true);
+        setIsLoading(false);
+      }, 1200)
+
     } catch (error) {
       handleFirebaseError(error);
+      setIsLoading(false);
     }
 
-    setIsLoading(false);
   }, [txDate, txDetails, formInstance, closeDrawer])
 
   return (

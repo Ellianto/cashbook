@@ -35,8 +35,12 @@ const DASHBOARD_VIEWS = {
 const DATE_INTERVALS = {
   THIS_MONTH: "THIS_MONTH",
   LAST_MONTH: "LAST_MONTH",
-  THIS_QUARTER: "THIS_QUARTER",
-  LAST_QUARTER: "LAST_QUARTER",
+  // THIS_QUARTER: "THIS_QUARTER",
+  // LAST_QUARTER: "LAST_QUARTER",
+  Q1: "Q1",
+  Q2: "Q2",
+  Q3: "Q3",
+  Q4: "Q4",
   CUSTOM: "CUSTOM",
 }
 
@@ -67,13 +71,29 @@ const dateIntervalOptions = [
     value: DATE_INTERVALS.LAST_MONTH,
   },
   { 
-    label: "Kuartal ini",
-    value: DATE_INTERVALS.THIS_QUARTER,
+    label: "Q1",
+    value: DATE_INTERVALS.Q1,
   },
   { 
-    label: "Kuartal lalu",
-    value: DATE_INTERVALS.LAST_QUARTER,
+    label: "Q2",
+    value: DATE_INTERVALS.Q2,
   },
+  { 
+    label: "Q3",
+    value: DATE_INTERVALS.Q3,
+  },
+  { 
+    label: "Q4",
+    value: DATE_INTERVALS.Q4,
+  },
+  // {
+  //   label: "Kuartal ini",
+  //   value: DATE_INTERVALS.THIS_QUARTER,
+  // },
+  // {
+  //   label: "Kuartal lalu",
+  //   value: DATE_INTERVALS.LAST_QUARTER,
+  // },
   { 
     label: "Custom",
     value: DATE_INTERVALS.CUSTOM,
@@ -197,15 +217,31 @@ export const DashboardScreen = () => {
         setStartDate(lastMonth)
         setEndDate(moment(lastMonth).endOf('month'))
         break;
-      case DATE_INTERVALS.THIS_QUARTER:
-        setStartDate(moment(today).startOf('quarter'))
-        setEndDate(moment(today).endOf('quarter'))
+      case DATE_INTERVALS.Q1:
+        setStartDate(moment(today).quarter(1).startOf('quarter'))
+        setEndDate(moment(today).quarter(1).endOf('quarter'))
         break;
-      case DATE_INTERVALS.LAST_QUARTER:
-        const lastQuarter = moment(today).subtract(1, 'quarter').startOf('quarter')
-        setStartDate(lastQuarter)
-        setEndDate(moment(lastQuarter).endOf('quarter'))
+      case DATE_INTERVALS.Q2:
+        setStartDate(moment(today).quarter(2).startOf('quarter'))
+        setEndDate(moment(today).quarter(2).endOf('quarter'))
         break;
+      case DATE_INTERVALS.Q3:
+        setStartDate(moment(today).quarter(3).startOf('quarter'))
+        setEndDate(moment(today).quarter(3).endOf('quarter'))
+        break;
+      case DATE_INTERVALS.Q4:
+        setStartDate(moment(today).quarter(4).startOf('quarter'))
+        setEndDate(moment(today).quarter(4).endOf('quarter'))
+        break;
+      // case DATE_INTERVALS.THIS_QUARTER:
+      //   setStartDate(moment(today).startOf('quarter'))
+      //   setEndDate(moment(today).endOf('quarter'))
+      //   break;
+      // case DATE_INTERVALS.LAST_QUARTER:
+      //   const lastQuarter = moment(today).subtract(1, 'quarter').startOf('quarter')
+      //   setStartDate(lastQuarter)
+      //   setEndDate(moment(lastQuarter).endOf('quarter'))
+      //   break;
     
       default:
         setStartDate(null);
