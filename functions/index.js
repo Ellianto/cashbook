@@ -17,18 +17,18 @@ const AUTH_REQUIRED = true;
 // and as of now Firebase Hosting is only available here
 // If we choose other regions, the callable functions will face
 // CORS Issues
-// TODO: See if we can deploy + host using surge.sh
-// That way we're not bound to putting the function in us-central1
+// TODO: Explore adding middleware to try to solve CORS issue
+// https://firebase.google.com/docs/hosting/functions#add_middleware
 const functionsRegion = "us-central1"
 
 const lightRuntime = {
   timeoutSeconds: 120,
-  memory: "256MB",
+  memory: "512MB",
 };
 
 const heavyRuntime = {
   timeoutSeconds: 300,
-  memory: "512MB",
+  memory: "1GB",
 };
 
 const generateLightRuntimeCloudFunctions = () => {
