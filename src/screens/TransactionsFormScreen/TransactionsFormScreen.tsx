@@ -11,7 +11,6 @@ import {
   Radio,
   Typography,
   DatePicker,
-  InputNumber,
   Descriptions,
   RadioChangeEvent,
   message,
@@ -19,7 +18,8 @@ import {
 import moment from "moment";
 import numeral from "numeral";
 
-import { ScreenTemplate } from "../../components";
+import { ScreenTemplate, CalculatorInput } from "../../components";
+
 import {
   OperationalCategory,
   ProductInventory,
@@ -54,6 +54,9 @@ const { Text } = Typography;
 
 export const TransactionFormScreen = () => {
   const [formInstance] = Form.useForm();
+
+  const qtyValue = Form.useWatch('qty', formInstance);
+  const priceValue = Form.useWatch('amount', formInstance);
 
   const [transactionDate, setTransactionDate] = useState<moment.Moment | null>(
     null
@@ -132,6 +135,20 @@ export const TransactionFormScreen = () => {
   const handleExpenseTypeChanged = useCallback((e: RadioChangeEvent) => {
     setExpenseType(e.target.value);
   }, []);
+
+  const handleQtyInputChanged = useCallback((newQty: number) => {
+    formInstance.setFieldsValue({
+      ...formInstance.getFieldsValue(),
+      qty: newQty,
+    })
+  }, [formInstance]);
+
+  const handlePriceInputChanged = useCallback((newPrice: number) => {
+    formInstance.setFieldsValue({
+      ...formInstance.getFieldsValue(),
+      amount: newPrice,
+    })
+  }, [formInstance]);
 
   const handleDisableDate = useCallback(
     (date: moment.Moment) => date.isAfter(moment()),
@@ -386,6 +403,55 @@ export const TransactionFormScreen = () => {
             label="Jumlah transaksi"
             rules={number("Jumlah transaksi tidak boleh kosong!")}
           >
+            <CalculatorInput 
+              key="price_input"
+              initialValue={priceValue ?? 0}
+              onChange={handlePriceInputChanged}
+              inputNumberProps={{
+                className: "block-input",
+                min: 0 as number,
+                step: 1,
+                addonBefore: "Rp",
+                size: "large",
+                placeholder: "Masukkan jumlah transaksi",
+                parser: (displayValue: string | undefined) => numeral(displayValue).value() ?? 0,
+                formatter: (value: number | undefined, _: any) => numberFormatting.formatIDRCurrencyNumber(value ?? 0)
+              }}
+            />
+          </Form.Item>
+          <Form.Item
+            className="compact-form-item"
+            id="qty"
+            name="qty"
+            label="Kuantitas barang"
+            hidden={expenseType === CATEGORY_TYPES.OPERATIONAL}
+            rules={
+              expenseType === CATEGORY_TYPES.PRODUCT
+                ? number("Kuantitas barang tidak boleh kosong!", 0.1)
+                : []
+            }
+          >
+            <CalculatorInput 
+              key="qty_input"
+              initialValue={qtyValue ?? 0}
+              onChange={handleQtyInputChanged}
+              inputNumberProps={{
+                min: 0.1,
+                step: 0.1,
+                precision: 1,
+                addonAfter: "kg",
+                size: "large",
+                placeholder: "Masukkan kuantitas barang",
+              }}
+            />
+          </Form.Item>
+          {/* <Form.Item
+            className="compact-form-item"
+            id="amount"
+            name="amount"
+            label="Jumlah transaksi"
+            rules={number("Jumlah transaksi tidak boleh kosong!")}
+          >
             <InputNumber
               className="block-input"
               min={0 as number}
@@ -418,7 +484,7 @@ export const TransactionFormScreen = () => {
               size="large"
               placeholder="Masukkan kuantitas barang"
             />
-          </Form.Item>
+          </Form.Item> */}
           <Form.Item>
             <Row justify="center">
               <Col xs={12}>
