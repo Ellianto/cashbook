@@ -865,9 +865,12 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
     await docRef.set({
       ...docData,
       current_average_price: isNaN(docData.current_average_price) ||
-        (isNaN(docData.current_stock) || docData.current_stock === 0)
+        (isNaN(docData.current_stock) || docData.current_stock <= 0)
         ? 0 : docData.current_average_price,
-      current_stock: isNaN(docData.current_stock) ? 0 : docData.current_stock,
+      // There can be a case where the amount of product that goes out
+      // is way more than that goes in, so we put a limit to make sure that
+      // minimum value of stock is always 0
+      current_stock: isNaN(docData.current_stock) ? 0 : Math.max(docData.current_stock, 0),
     }, { merge: true })
 
     prevDoc = docData;
@@ -877,9 +880,9 @@ const recalculateProductAveragePrices = async (productId, startTransactionDate) 
   // to the parent collection
   if (prevDoc) {
     await productRef.set({
-      stock: isNaN(prevDoc.current_stock) ? 0 : prevDoc.current_stock,
+      stock: isNaN(prevDoc.current_stock) ? 0 : Math.max(prevDoc.current_stock, 0),
       average_buy_price: isNaN(prevDoc.current_average_price) || 
-        (isNaN(prevDoc.current_stock) || prevDoc.current_stock === 0) 
+        (isNaN(prevDoc.current_stock) || prevDoc.current_stock <= 0) 
         ? 0 : prevDoc.current_average_price,
     }, { merge: true })
   }

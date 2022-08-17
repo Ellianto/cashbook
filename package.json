@@ -46,8 +46,7 @@
     "build:prod": "NODE_ENV=production react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "deploy:firebase": "firebase deploy --only hosting",
-    "deploy:surge": "surge --domain https://cashbook.surge.sh"
+    "deploy:firebase": "firebase deploy --only hosting"
   },
   "eslintConfig": {
     "extends": [
