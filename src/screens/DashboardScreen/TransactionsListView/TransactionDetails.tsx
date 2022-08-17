@@ -1,13 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import numeral from "numeral";
 
-import { Form, InputNumber, Drawer, Descriptions, Typography, Row, Col, Button, Spin, message, Popconfirm } from 'antd';
+import { Form, Drawer, Descriptions, Typography, Row, Col, Button, Spin, message, Popconfirm } from 'antd';
+
+import { CalculatorInput } from "../../../components";
 
 import { constants, formRules } from '../../../constants';
 import { TransactionItem } from '../../../constants/interfaces';
+import { DeleteTransactionPayload, EditTransactionPayload } from '../../../constants/payloads';
 
 import { dateFormatting, handleFirebaseError, numberFormatting } from '../../../utils';
-import { DeleteTransactionPayload, EditTransactionPayload } from '../../../constants/payloads';
 import { deleteTransactionMethod, editTransactionMethod } from '../../../firebase';
 
 const { TRANSACTION_TYPES, CATEGORY_TYPES } = constants
@@ -27,6 +29,9 @@ interface TransactionDetailsProps {
 export const TransactionDetails: React.FC<TransactionDetailsProps> = (props) => {
   const [formInstance] = Form.useForm()
 
+  const qtyValue = Form.useWatch('qty', formInstance);
+  const priceValue = Form.useWatch('amount', formInstance);
+
   const { visible, txDetails, txDate, closeDrawer, getProductsName = () => '', getOperationalsName = () => '' } = props
 
   const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -41,6 +46,20 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = (props) => 
       formInstance.resetFields()
     }
   }, [visible, txDetails, formInstance]);
+
+  const handleQtyInputChanged = useCallback((newQty: number) => {
+    formInstance.setFieldsValue({
+      ...formInstance.getFieldsValue(),
+      qty: newQty,
+    })
+  }, [formInstance]);
+
+  const handlePriceInputChanged = useCallback((newPrice: number) => {
+    formInstance.setFieldsValue({
+      ...formInstance.getFieldsValue(),
+      amount: newPrice,
+    })
+  }, [formInstance]);
 
   const handleDeleteTransaction = useCallback(async () => {
     setIsLoading(true);
@@ -189,6 +208,56 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = (props) => 
                 label="Jumlah transaksi"
                 rules={number("Jumlah transaksi tidak boleh kosong!")}
               >
+                <CalculatorInput 
+                  key="price_input"
+                  initialValue={priceValue ?? 0}
+                  onChange={handlePriceInputChanged}
+                  inputNumberProps={{
+                    className: "block-input",
+                    min: 0 as number,
+                    precision: 1,
+                    addonBefore: "Rp",
+                    size: "large",
+                    placeholder: "Masukkan kuantitas barang",
+                    parser: (displayValue: string | undefined) => numeral(displayValue).value() ?? 0,
+                    formatter: (value: number | undefined, _: any) => numberFormatting.formatIDRCurrencyNumber(value ?? 0),
+                  }}
+                />
+              </Form.Item>
+              <Form.Item
+                className="compact-form-item"
+                id="qty"
+                name="qty"
+                label="Kuantitas barang"
+                hidden={txDetails.category_type === CATEGORY_TYPES.OPERATIONAL}
+                rules={
+                  txDetails.category_type === CATEGORY_TYPES.PRODUCT
+                    ? number("Kuantitas barang tidak boleh kosong!", 0.1)
+                    : []
+                }
+              >
+                <CalculatorInput 
+                  key="qty_input"
+                  initialValue={qtyValue ?? 0}
+                  onChange={handleQtyInputChanged}
+                  inputNumberProps={{
+                    className: "block-input",
+                    min: 0.1,
+                    step: 0.1,
+                    precision: 1,
+                    addonAfter: "kg",
+                    size: "large",
+                    placeholder: "Masukkan kuantitas barang",
+                  }}
+                />
+              </Form.Item>
+              {/* <Form.Item
+                className="compact-form-item"
+                id="amount"
+                name="amount"
+                label="Jumlah transaksi"
+                rules={number("Jumlah transaksi tidak boleh kosong!")}
+              >
                 <InputNumber
                   className="block-input"
                   min={0 as number}
@@ -221,7 +290,7 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = (props) => 
                   size="large"
                   placeholder="Masukkan kuantitas barang"
                 />
-              </Form.Item>
+              </Form.Item> */}
             </Col>
 
             <Col xs={12}>
@@ -243,7 +312,6 @@ export const TransactionDetails: React.FC<TransactionDetailsProps> = (props) => 
           </Row>
         </Form>
       </Spin>
-
     </Drawer>
   )
 }
