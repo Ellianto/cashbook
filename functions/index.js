@@ -5,7 +5,7 @@ const firebase_tools = require('firebase-tools');
 // For simple console.log compatibility
 require("firebase-functions/lib/logger/compat");
 
-const serviceAccount = require("./secrets/cashbook-b57ed-19a628e94530.json");
+const serviceAccount = require("../secrets/cashbook-b57ed-firebase-adminsdk-a0bo2-55ab51f322.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
