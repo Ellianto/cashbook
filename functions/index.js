@@ -19,22 +19,22 @@ const AUTH_REQUIRED = true;
 // CORS Issues
 // TODO: Explore adding middleware to try to solve CORS issue
 // https://firebase.google.com/docs/hosting/functions#add_middleware
-const functionsRegion = "us-central1"
+// const functionsRegion = "us-central1"
+const functionsRegion = "asia-southeast2"
 
 const lightRuntime = {
   timeoutSeconds: 120,
-  memory: "512MB",
+  memory: "1GB",
 };
 
 const heavyRuntime = {
   timeoutSeconds: 300,
-  memory: "1GB",
+  memory: "2GB",
 };
 
 const generateLightRuntimeCloudFunctions = () => {
   return functions.region(functionsRegion).runWith(lightRuntime).https;
 };
-
 
 const generateHeavyRuntimeCloudFunctions = () => {
   return functions.region(functionsRegion).runWith(heavyRuntime).https;
