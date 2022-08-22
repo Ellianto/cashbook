@@ -13,28 +13,21 @@ admin.initializeApp({
 
 // Feature flag to quickly enable/disable auth checks
 const AUTH_REQUIRED = true;
-// Doing this since we're hosting using Firebase Hosting
-// and as of now Firebase Hosting is only available here
-// If we choose other regions, the callable functions will face
-// CORS Issues
-// TODO: Explore adding middleware to try to solve CORS issue
-// https://firebase.google.com/docs/hosting/functions#add_middleware
-const functionsRegion = "us-central1"
+const functionsRegion = "asia-southeast2"
 
 const lightRuntime = {
   timeoutSeconds: 120,
-  memory: "512MB",
+  memory: "1GB",
 };
 
 const heavyRuntime = {
   timeoutSeconds: 300,
-  memory: "1GB",
+  memory: "2GB",
 };
 
 const generateLightRuntimeCloudFunctions = () => {
   return functions.region(functionsRegion).runWith(lightRuntime).https;
 };
-
 
 const generateHeavyRuntimeCloudFunctions = () => {
   return functions.region(functionsRegion).runWith(heavyRuntime).https;
