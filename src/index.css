@@ -18,6 +18,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   font-size: 16px;
+  background-color: rgb(240, 242, 245);
 }
 
 code {
@@ -32,4 +33,10 @@ code {
 
 .ant-back-top {
   bottom: 64px !important;
+}
+
+.container {
+  max-width: 756px;
+  margin: 0 auto;
+  padding-top: 8px;
 }
